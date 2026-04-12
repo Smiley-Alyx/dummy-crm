@@ -361,12 +361,16 @@ class ShipmentController extends Controller
         ksort($actualByDate);
         $spentCumulative = 0.0;
 
+        if (count($calendarDays) === 0) {
+            $calendarDays = [CarbonImmutable::today()];
+        }
+
         $burndownDays = max(1, count($calendarDays));
         $row2 = 2;
         for ($i = 0; $i < $burndownDays; $i++) {
             $plannedRemaining = max(0.0, $totalEstimate - ($totalEstimate / $burndownDays) * $i);
 
-            $dateKey = $calendarDays[$i]->toDateString() ?? null;
+            $dateKey = isset($calendarDays[$i]) ? $calendarDays[$i]->toDateString() : null;
             if ($dateKey && isset($actualByDate[$dateKey])) {
                 $spentCumulative += ($actualByDate[$dateKey] / 60.0);
             }

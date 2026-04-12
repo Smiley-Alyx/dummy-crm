@@ -23,6 +23,7 @@ Route::apiResource('time-entries', TimeEntryController::class);
 Route::apiResource('departments', DepartmentController::class);
 
 Route::get('shipments/{shipment}/gantt', [ShipmentController::class, 'gantt']);
+Route::get('shipments/{shipment}/export', [ShipmentController::class, 'export']);
 Route::apiResource('shipments', ShipmentController::class);
 
 Route::post('tasks/{task}/reschedule', [TaskController::class, 'reschedule']);

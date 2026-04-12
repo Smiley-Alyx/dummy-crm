@@ -4,15 +4,22 @@ RUN apk add --no-cache \
     bash \
     git \
     unzip \
+    libzip-dev \
+    freetype-dev \
+    libjpeg-turbo-dev \
+    libpng-dev \
     libpq-dev \
     icu-dev \
     oniguruma-dev \
     linux-headers \
     $PHPIZE_DEPS \
+  && docker-php-ext-configure gd --with-freetype --with-jpeg \
   && docker-php-ext-install \
     pdo \
     pdo_pgsql \
     intl \
+    gd \
+    zip \
   && apk del $PHPIZE_DEPS
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

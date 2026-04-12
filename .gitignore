@@ -1,0 +1,12 @@
+/.idea/
+/.vscode/
+/.DS_Store
+
+/backend/.env
+/backend/vendor/
+/backend/node_modules/
+/backend/storage/*.key
+
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.env

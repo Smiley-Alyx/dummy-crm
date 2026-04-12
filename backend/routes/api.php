@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ShipmentController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\TaskAssignmentController;
 use App\Http\Controllers\Api\TaskWorkLogController;
+use App\Http\Controllers\Api\UserController;
 
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
@@ -31,6 +32,8 @@ Route::apiResource('tasks', TaskController::class);
 
 Route::apiResource('task-assignments', TaskAssignmentController::class);
 Route::apiResource('task-work-logs', TaskWorkLogController::class);
+
+Route::get('users', [UserController::class, 'index']);
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();

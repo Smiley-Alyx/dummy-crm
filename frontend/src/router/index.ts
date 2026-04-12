@@ -9,6 +9,10 @@ import NoteEditView from '../views/NoteEditView.vue'
 import TimeEntriesListView from '../views/TimeEntriesListView.vue'
 import TimeEntryCreateView from '../views/TimeEntryCreateView.vue'
 import TimeEntryEditView from '../views/TimeEntryEditView.vue'
+import ShipmentsListView from '../views/ShipmentsListView.vue'
+import ShipmentCreateView from '../views/ShipmentCreateView.vue'
+import ShipmentDetailView from '../views/ShipmentDetailView.vue'
+import ShipmentGanttView from '../views/ShipmentGanttView.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -17,6 +21,10 @@ export const router = createRouter({
     { path: '/projects', component: ProjectsListView },
     { path: '/projects/new', component: ProjectCreateView },
     { path: '/projects/:id/edit', component: ProjectEditView, props: true },
+    { path: '/projects/:projectId/shipments', component: ShipmentsListView, props: true },
+    { path: '/projects/:projectId/shipments/new', component: ShipmentCreateView, props: true },
+    { path: '/projects/:projectId/shipments/:shipmentId', component: ShipmentDetailView, props: true },
+    { path: '/projects/:projectId/shipments/:shipmentId/gantt', component: ShipmentGanttView, props: true },
     { path: '/notes', component: NotesListView },
     { path: '/notes/new', component: NoteCreateView },
     { path: '/notes/:id/edit', component: NoteEditView, props: true },

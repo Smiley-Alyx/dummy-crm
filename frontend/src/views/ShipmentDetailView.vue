@@ -1,0 +1,460 @@
+<script setup lang="ts">
+import { computed, onMounted, ref, watch } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
+import { api } from '../lib/api'
+
+type Shipment = {
+  id: number
+  project_id: number
+  title: string
+  description: string | null
+  planned_start_date: string | null
+  planned_due_date: string | null
+  created_at: string
+  updated_at: string
+}
+
+type Task = {
+  id: number
+  project_id: number
+  shipment_id: number
+  title: string
+  acceptance_criteria: string | null
+  estimate_hours: number
+  start_date: string
+  due_date: string | null
+  stage: string
+  order: number
+  created_at: string
+  updated_at: string
+}
+
+type Paginated<T> = {
+  data: T[]
+}
+
+type User = {
+  id: number
+  name: string
+  email: string
+}
+
+type TaskAssignment = {
+  id: number
+  task_id: number
+  user_id: number
+  capacity_hours_per_day: number
+  created_at: string
+  updated_at: string
+}
+
+type TaskWorkLog = {
+  id: number
+  task_id: number
+  user_id: number
+  work_date: string
+  minutes: number
+  comment: string | null
+  created_at: string
+  updated_at: string
+}
+
+const route = useRoute()
+const projectId = computed(() => Number(route.params.projectId))
+const shipmentId = computed(() => Number(route.params.shipmentId))
+
+const shipment = ref<Shipment | null>(null)
+const tasks = ref<Task[]>([])
+
+const users = ref<User[]>([])
+
+const loading = ref(false)
+const error = ref<string | null>(null)
+
+const newTitle = ref('')
+const newEstimateHours = ref<number>(8)
+const newStartDate = ref<string>(new Date().toISOString().slice(0, 10))
+const newDueDate = ref<string | null>(null)
+const creatingTask = ref(false)
+
+const detailsOpen = ref<Record<number, boolean>>({})
+const detailsLoading = ref<Record<number, boolean>>({})
+const assignmentsByTask = ref<Record<number, TaskAssignment[]>>({})
+const logsByTask = ref<Record<number, TaskWorkLog[]>>({})
+
+const assignUserId = ref<Record<number, number | null>>({})
+const assignCapacity = ref<Record<number, number>>({})
+const logUserId = ref<Record<number, number | null>>({})
+const logMinutes = ref<Record<number, number>>({})
+
+const todayYmd = new Date().toISOString().slice(0, 10)
+
+async function fetchAll() {
+  loading.value = true
+  error.value = null
+
+  try {
+    const [shipmentRes, tasksRes, usersRes] = await Promise.all([
+      api.get<Shipment>(`/api/shipments/${shipmentId.value}`),
+      api.get<Paginated<Task>>('/api/tasks', {
+        params: {
+          shipment_id: shipmentId.value,
+          per_page: 100,
+        },
+      }),
+      api.get<Paginated<User>>('/api/users', {
+        params: {
+          per_page: 200,
+        },
+      }),
+    ])
+
+    shipment.value = shipmentRes.data
+    tasks.value = tasksRes.data.data
+    users.value = usersRes.data.data
+  } catch (e: any) {
+    error.value = e?.response?.data?.message ?? e?.message ?? 'Failed to load shipment'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadTaskDetails(taskId: number) {
+  detailsLoading.value[taskId] = true
+  error.value = null
+
+  try {
+    const [assignmentsRes, logsRes] = await Promise.all([
+      api.get<Paginated<TaskAssignment>>('/api/task-assignments', {
+        params: {
+          task_id: taskId,
+          per_page: 200,
+        },
+      }),
+      api.get<Paginated<TaskWorkLog>>('/api/task-work-logs', {
+        params: {
+          task_id: taskId,
+          per_page: 200,
+        },
+      }),
+    ])
+
+    assignmentsByTask.value[taskId] = assignmentsRes.data.data
+    logsByTask.value[taskId] = logsRes.data.data
+
+    if (assignUserId.value[taskId] == null && users.value.length) {
+      assignUserId.value[taskId] = users.value[0]!.id
+    }
+    if (logUserId.value[taskId] == null && users.value.length) {
+      logUserId.value[taskId] = users.value[0]!.id
+    }
+    if (assignCapacity.value[taskId] == null) {
+      assignCapacity.value[taskId] = 4
+    }
+    if (logMinutes.value[taskId] == null) {
+      logMinutes.value[taskId] = 60
+    }
+  } catch (e: any) {
+    error.value = e?.response?.data?.message ?? e?.message ?? 'Failed to load task details'
+  } finally {
+    detailsLoading.value[taskId] = false
+  }
+}
+
+async function createAssignment(taskId: number) {
+  const userId = assignUserId.value[taskId]
+  const capacity = assignCapacity.value[taskId]
+  if (!userId) return
+
+  error.value = null
+
+  try {
+    await api.post('/api/task-assignments', {
+      task_id: taskId,
+      user_id: userId,
+      capacity_hours_per_day: capacity,
+    })
+    await loadTaskDetails(taskId)
+  } catch (e: any) {
+    error.value = e?.response?.data?.message ?? e?.message ?? 'Failed to create assignment'
+  }
+}
+
+async function createWorkLog(taskId: number) {
+  const userId = logUserId.value[taskId]
+  const minutes = logMinutes.value[taskId]
+  if (!userId) return
+
+  error.value = null
+
+  try {
+    await api.post('/api/task-work-logs', {
+      task_id: taskId,
+      user_id: userId,
+      work_date: todayYmd,
+      minutes,
+    })
+    await loadTaskDetails(taskId)
+  } catch (e: any) {
+    error.value = e?.response?.data?.message ?? e?.message ?? 'Failed to create work log'
+  }
+}
+
+function userLabel(userId: number): string {
+  const u = users.value.find((x) => x.id === userId)
+  return u ? `${u.name}` : `#${userId}`
+}
+
+async function createTask() {
+  if (!newTitle.value.trim()) return
+
+  creatingTask.value = true
+  error.value = null
+
+  try {
+    await api.post('/api/tasks', {
+      project_id: projectId.value,
+      shipment_id: shipmentId.value,
+      title: newTitle.value,
+      estimate_hours: newEstimateHours.value,
+      start_date: newStartDate.value,
+      due_date: newDueDate.value,
+      stage: 'planned',
+      order: tasks.value.length + 1,
+    })
+
+    newTitle.value = ''
+    await fetchAll()
+  } catch (e: any) {
+    error.value = e?.response?.data?.message ?? e?.message ?? 'Failed to create task'
+  } finally {
+    creatingTask.value = false
+  }
+}
+
+async function removeTask(id: number) {
+  if (!confirm('Delete task?')) return
+
+  try {
+    await api.delete(`/api/tasks/${id}`)
+    await fetchAll()
+  } catch (e: any) {
+    alert(e?.response?.data?.message ?? e?.message ?? 'Failed to delete task')
+  }
+}
+
+function downloadExport() {
+  window.location.href = `${api.defaults.baseURL}/api/shipments/${shipmentId.value}/export`
+}
+
+watch(
+  () => [route.params.projectId, route.params.shipmentId],
+  () => {
+    fetchAll()
+  },
+)
+
+onMounted(fetchAll)
+</script>
+
+<template>
+  <div style="max-width: 1100px; margin: 0 auto; padding: 24px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px;">
+      <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+        <h1 style="margin: 0;">Shipment</h1>
+        <span style="color: #6b7280;">#{{ shipmentId }}</span>
+        <span v-if="shipment" style="color: #111827;">— {{ shipment.title }}</span>
+      </div>
+
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <button
+          type="button"
+          @click="downloadExport"
+          style="padding: 8px 10px; border: 1px solid #111827; border-radius: 8px; background: #111827; color: #fff;"
+        >
+          Export XLSX
+        </button>
+      </div>
+    </div>
+
+    <div style="margin-top: 12px; display: flex; gap: 12px;">
+      <RouterLink :to="`/projects/${projectId}/shipments`">← Back to shipments</RouterLink>
+      <RouterLink :to="`/projects/${projectId}/shipments/${shipmentId}/gantt`">Gantt</RouterLink>
+    </div>
+
+    <div v-if="loading" style="margin-top: 16px;">Loading...</div>
+    <div v-else-if="error" style="margin-top: 16px; color: #b91c1c;">{{ error }}</div>
+
+    <div v-else style="margin-top: 16px; display: grid; gap: 16px;">
+      <section style="border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px;">
+        <h2 style="margin: 0 0 12px; font-size: 16px;">Create task</h2>
+
+        <form @submit.prevent="createTask" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px; align-items: end;">
+          <label style="display: grid; gap: 6px;">
+            <span>Title</span>
+            <input v-model="newTitle" required style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;" />
+          </label>
+
+          <label style="display: grid; gap: 6px;">
+            <span>Estimate (h)</span>
+            <input
+              v-model.number="newEstimateHours"
+              type="number"
+              min="0.25"
+              step="0.25"
+              style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;"
+            />
+          </label>
+
+          <label style="display: grid; gap: 6px;">
+            <span>Start</span>
+            <input v-model="newStartDate" type="date" style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;" />
+          </label>
+
+          <label style="display: grid; gap: 6px;">
+            <span>Due (optional)</span>
+            <input v-model="newDueDate" type="date" style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;" />
+          </label>
+
+          <div style="grid-column: 1 / -1;">
+            <button
+              type="submit"
+              :disabled="creatingTask"
+              style="padding: 10px 12px; border: 1px solid #111827; border-radius: 8px; background: #111827; color: #fff;"
+            >
+              {{ creatingTask ? 'Saving...' : 'Create task' }}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section>
+        <h2 style="margin: 0; font-size: 16px;">Tasks</h2>
+
+        <table style="width: 100%; margin-top: 12px; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Order</th>
+              <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Title</th>
+              <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Start</th>
+              <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Due</th>
+              <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Stage</th>
+              <th style="text-align: right; border-bottom: 1px solid #e5e7eb; padding: 8px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="t in tasks" :key="t.id">
+              <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ t.order }}</td>
+              <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ t.title }}</td>
+              <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ t.start_date }}</td>
+              <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ t.due_date ?? '—' }}</td>
+              <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ t.stage }}</td>
+              <td style="border-bottom: 1px solid #f3f4f6; padding: 8px; text-align: right;">
+                <a
+                  href="#"
+                  @click.prevent="
+                    detailsOpen[t.id] = !detailsOpen[t.id]
+                    if (detailsOpen[t.id] && !assignmentsByTask[t.id] && !logsByTask[t.id]) loadTaskDetails(t.id)
+                  "
+                >
+                  {{ detailsOpen[t.id] ? 'Hide' : 'Manage' }}
+                </a>
+                <span> | </span>
+                <a href="#" @click.prevent="removeTask(t.id)">Delete</a>
+              </td>
+            </tr>
+
+            <tr v-for="t in tasks" v-show="detailsOpen[t.id]" :key="`details-${t.id}`">
+              <td colspan="6" style="border-bottom: 1px solid #f3f4f6; padding: 12px; background: #fafafa;">
+                <div style="display: grid; gap: 12px;">
+                  <div v-if="detailsLoading[t.id]">Loading task details...</div>
+
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div style="border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; background: #fff;">
+                      <div style="font-weight: 600; margin-bottom: 8px;">Assignments</div>
+
+                      <div v-if="assignmentsByTask[t.id]?.length" style="display: grid; gap: 6px; margin-bottom: 10px;">
+                        <div v-for="a in assignmentsByTask[t.id]" :key="a.id" style="display: flex; justify-content: space-between; gap: 12px;">
+                          <div>{{ userLabel(a.user_id) }}</div>
+                          <div style="color: #6b7280;">{{ a.capacity_hours_per_day }} h/day</div>
+                        </div>
+                      </div>
+                      <div v-else style="color: #6b7280; margin-bottom: 10px;">No assignments yet</div>
+
+                      <form @submit.prevent="createAssignment(t.id)" style="display: flex; gap: 8px; align-items: end; flex-wrap: wrap;">
+                        <label style="display: grid; gap: 6px;">
+                          <span>User</span>
+                          <select v-model.number="assignUserId[t.id]" style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;">
+                            <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }} ({{ u.email }})</option>
+                          </select>
+                        </label>
+
+                        <label style="display: grid; gap: 6px;">
+                          <span>h/day</span>
+                          <input
+                            v-model.number="assignCapacity[t.id]"
+                            type="number"
+                            min="0.25"
+                            step="0.25"
+                            style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px; width: 120px;"
+                          />
+                        </label>
+
+                        <button
+                          type="submit"
+                          style="padding: 10px 12px; border: 1px solid #111827; border-radius: 8px; background: #111827; color: #fff;"
+                        >
+                          Assign
+                        </button>
+                      </form>
+                    </div>
+
+                    <div style="border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; background: #fff;">
+                      <div style="font-weight: 600; margin-bottom: 8px;">Work logs (today: {{ todayYmd }})</div>
+
+                      <div v-if="logsByTask[t.id]?.length" style="display: grid; gap: 6px; margin-bottom: 10px;">
+                        <div v-for="l in logsByTask[t.id]" :key="l.id" style="display: flex; justify-content: space-between; gap: 12px;">
+                          <div>{{ userLabel(l.user_id) }}</div>
+                          <div style="color: #6b7280;">{{ l.minutes }} min</div>
+                        </div>
+                      </div>
+                      <div v-else style="color: #6b7280; margin-bottom: 10px;">No logs yet</div>
+
+                      <form @submit.prevent="createWorkLog(t.id)" style="display: flex; gap: 8px; align-items: end; flex-wrap: wrap;">
+                        <label style="display: grid; gap: 6px;">
+                          <span>User</span>
+                          <select v-model.number="logUserId[t.id]" style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;">
+                            <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }} ({{ u.email }})</option>
+                          </select>
+                        </label>
+
+                        <label style="display: grid; gap: 6px;">
+                          <span>minutes</span>
+                          <input
+                            v-model.number="logMinutes[t.id]"
+                            type="number"
+                            min="1"
+                            max="1440"
+                            step="1"
+                            style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px; width: 120px;"
+                          />
+                        </label>
+
+                        <button
+                          type="submit"
+                          style="padding: 10px 12px; border: 1px solid #111827; border-radius: 8px; background: #111827; color: #fff;"
+                        >
+                          Log
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </div>
+</template>

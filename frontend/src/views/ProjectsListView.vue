@@ -81,6 +81,8 @@ onMounted(fetchProjects)
           <td style="border-bottom: 1px solid #f3f4f6; padding: 8px; text-align: right;">
             <RouterLink :to="`/projects/${p.id}/edit`">Edit</RouterLink>
             <span> | </span>
+            <RouterLink :to="`/projects/${p.id}/shipments`">Shipments</RouterLink>
+            <span> | </span>
             <a href="#" @click.prevent="removeProject(p.id)">Delete</a>
           </td>
         </tr>

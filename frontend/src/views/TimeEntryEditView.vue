@@ -36,7 +36,7 @@ async function load() {
     minutes.value = String(res.data.minutes)
     note.value = res.data.note ?? ''
   } catch (e: any) {
-    error.value = e?.response?.data?.message ?? e?.message ?? 'Failed to load entry'
+    error.value = e?.response?.data?.message ?? e?.message ?? 'Не удалось загрузить запись'
   } finally {
     loading.value = false
   }
@@ -56,7 +56,7 @@ async function submit() {
 
     await router.push('/time')
   } catch (e: any) {
-    error.value = e?.response?.data?.message ?? e?.message ?? 'Failed to update entry'
+    error.value = e?.response?.data?.message ?? e?.message ?? 'Не удалось обновить запись'
   } finally {
     saving.value = false
   }
@@ -68,36 +68,36 @@ onMounted(load)
 <template>
   <div style="max-width: 900px; margin: 0 auto; padding: 24px;">
     <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-      <h1 style="margin: 0;">Edit time entry</h1>
-      <RouterLink to="/time">Back</RouterLink>
+      <h1 style="margin: 0;">Редактировать запись</h1>
+      <RouterLink to="/time">Назад</RouterLink>
     </div>
 
-    <div v-if="loading" style="margin-top: 16px;">Loading...</div>
+    <div v-if="loading" style="margin-top: 16px;">Загрузка...</div>
     <div v-else>
       <form @submit.prevent="submit" style="margin-top: 16px; display: grid; gap: 12px;">
         <label>
-          Project ID
+          Проект ID
           <input v-model="project_id" required inputmode="numeric" style="display: block; width: 100%;" />
         </label>
 
         <label>
-          Date
+          Дата
           <input v-model="entry_date" required type="date" style="display: block; width: 100%;" />
         </label>
 
         <label>
-          Minutes
+          Минут
           <input v-model="minutes" required inputmode="numeric" style="display: block; width: 100%;" />
         </label>
 
         <label>
-          Note
+          Комментарий
           <input v-model="note" style="display: block; width: 100%;" />
         </label>
 
         <div v-if="error" style="color: #b91c1c;">{{ error }}</div>
 
-        <button type="submit" :disabled="saving">{{ saving ? 'Saving...' : 'Save' }}</button>
+        <button type="submit" :disabled="saving">{{ saving ? 'Сохранение...' : 'Сохранить' }}</button>
       </form>
     </div>
   </div>

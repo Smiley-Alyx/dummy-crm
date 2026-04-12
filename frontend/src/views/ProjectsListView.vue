@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { api } from '../lib/api'
+import { formatDate } from '../lib/format'
 
 type Project = {
   id: number
@@ -30,20 +31,20 @@ async function fetchProjects() {
     const res = await api.get<Paginated<Project>>('/api/projects')
     projects.value = res.data.data
   } catch (e: any) {
-    error.value = e?.message ?? 'Failed to load projects'
+    error.value = e?.message ?? 'Не удалось загрузить проекты'
   } finally {
     loading.value = false
   }
 }
 
 async function removeProject(id: number) {
-  if (!confirm('Delete project?')) return
+  if (!confirm('Удалить проект?')) return
 
   try {
     await api.delete(`/api/projects/${id}`)
     await fetchProjects()
   } catch (e: any) {
-    alert(e?.message ?? 'Failed to delete project')
+    alert(e?.message ?? 'Не удалось удалить проект')
   }
 }
 
@@ -53,20 +54,20 @@ onMounted(fetchProjects)
 <template>
   <div style="max-width: 900px; margin: 0 auto; padding: 24px;">
     <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-      <h1 style="margin: 0;">Projects</h1>
-      <RouterLink to="/projects/new">Create</RouterLink>
+      <h1 style="margin: 0;">Проекты</h1>
+      <RouterLink to="/projects/new">Создать</RouterLink>
     </div>
 
-    <div v-if="loading" style="margin-top: 16px;">Loading...</div>
+    <div v-if="loading" style="margin-top: 16px;">Загрузка...</div>
     <div v-else-if="error" style="margin-top: 16px; color: #b91c1c;">{{ error }}</div>
 
     <table v-else style="width: 100%; margin-top: 16px; border-collapse: collapse;">
       <thead>
         <tr>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Name</th>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Status</th>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Dates</th>
-          <th style="text-align: right; border-bottom: 1px solid #e5e7eb; padding: 8px;">Actions</th>
+          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Название</th>
+          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Статус</th>
+          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Даты</th>
+          <th style="text-align: right; border-bottom: 1px solid #e5e7eb; padding: 8px;">Действия</th>
         </tr>
       </thead>
       <tbody>
@@ -74,16 +75,16 @@ onMounted(fetchProjects)
           <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ p.name }}</td>
           <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ p.status }}</td>
           <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">
-            <span>{{ p.starts_on ?? '—' }}</span>
+            <span>{{ formatDate(p.starts_on) }}</span>
             <span> → </span>
-            <span>{{ p.ends_on ?? '—' }}</span>
+            <span>{{ formatDate(p.ends_on) }}</span>
           </td>
           <td style="border-bottom: 1px solid #f3f4f6; padding: 8px; text-align: right;">
-            <RouterLink :to="`/projects/${p.id}/edit`">Edit</RouterLink>
+            <RouterLink :to="`/projects/${p.id}/edit`">Изменить</RouterLink>
             <span> | </span>
-            <RouterLink :to="`/projects/${p.id}/shipments`">Shipments</RouterLink>
+            <RouterLink :to="`/projects/${p.id}/shipments`">Отгрузки</RouterLink>
             <span> | </span>
-            <a href="#" @click.prevent="removeProject(p.id)">Delete</a>
+            <a href="#" @click.prevent="removeProject(p.id)">Удалить</a>
           </td>
         </tr>
       </tbody>

@@ -32,7 +32,7 @@ async function load() {
     body.value = res.data.body ?? ''
     is_pinned.value = res.data.is_pinned
   } catch (e: any) {
-    error.value = e?.response?.data?.message ?? e?.message ?? 'Failed to load note'
+    error.value = e?.response?.data?.message ?? e?.message ?? 'Не удалось загрузить заметку'
   } finally {
     loading.value = false
   }
@@ -51,7 +51,7 @@ async function submit() {
 
     await router.push('/notes')
   } catch (e: any) {
-    error.value = e?.response?.data?.message ?? e?.message ?? 'Failed to update note'
+    error.value = e?.response?.data?.message ?? e?.message ?? 'Не удалось обновить заметку'
   } finally {
     saving.value = false
   }
@@ -63,31 +63,31 @@ onMounted(load)
 <template>
   <div style="max-width: 900px; margin: 0 auto; padding: 24px;">
     <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-      <h1 style="margin: 0;">Edit note</h1>
-      <RouterLink to="/notes">Back</RouterLink>
+      <h1 style="margin: 0;">Редактировать заметку</h1>
+      <RouterLink to="/notes">Назад</RouterLink>
     </div>
 
-    <div v-if="loading" style="margin-top: 16px;">Loading...</div>
+    <div v-if="loading" style="margin-top: 16px;">Загрузка...</div>
     <div v-else>
       <form @submit.prevent="submit" style="margin-top: 16px; display: grid; gap: 12px;">
         <label>
-          Title
+          Заголовок
           <input v-model="title" required style="display: block; width: 100%;" />
         </label>
 
         <label>
-          Body
+          Текст
           <textarea v-model="body" rows="6" style="display: block; width: 100%;"></textarea>
         </label>
 
         <label style="display: flex; gap: 8px; align-items: center;">
           <input v-model="is_pinned" type="checkbox" />
-          Pinned
+          Закрепить
         </label>
 
         <div v-if="error" style="color: #b91c1c;">{{ error }}</div>
 
-        <button type="submit" :disabled="saving">{{ saving ? 'Saving...' : 'Save' }}</button>
+        <button type="submit" :disabled="saving">{{ saving ? 'Сохранение...' : 'Сохранить' }}</button>
       </form>
     </div>
   </div>

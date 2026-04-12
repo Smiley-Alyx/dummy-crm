@@ -31,7 +31,7 @@ async function submit() {
 
     await router.push(`/projects/${projectId}/shipments`)
   } catch (e: any) {
-    error.value = e?.response?.data?.message ?? e?.message ?? 'Failed to create shipment'
+    error.value = e?.response?.data?.message ?? e?.message ?? 'Не удалось создать отгрузку'
   } finally {
     saving.value = false
   }
@@ -41,20 +41,20 @@ async function submit() {
 <template>
   <div style="max-width: 900px; margin: 0 auto; padding: 24px;">
     <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px;">
-      <h1 style="margin: 0;">Create shipment</h1>
-      <RouterLink :to="`/projects/${projectId}/shipments`">Back</RouterLink>
+      <h1 style="margin: 0;">Создать отгрузку</h1>
+      <RouterLink :to="`/projects/${projectId}/shipments`">Назад</RouterLink>
     </div>
 
     <div v-if="error" style="margin-top: 16px; color: #b91c1c;">{{ error }}</div>
 
     <form @submit.prevent="submit" style="margin-top: 16px; display: grid; gap: 12px;">
       <label style="display: grid; gap: 6px;">
-        <span>Title</span>
+        <span>Название</span>
         <input v-model="title" required style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;" />
       </label>
 
       <label style="display: grid; gap: 6px;">
-        <span>Description</span>
+        <span>Описание</span>
         <textarea
           v-model="description"
           rows="4"
@@ -64,12 +64,12 @@ async function submit() {
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
         <label style="display: grid; gap: 6px;">
-          <span>Planned start</span>
+          <span>План. старт</span>
           <input v-model="plannedStartDate" type="date" style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;" />
         </label>
 
         <label style="display: grid; gap: 6px;">
-          <span>Planned due</span>
+          <span>План. дедлайн</span>
           <input v-model="plannedDueDate" type="date" style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;" />
         </label>
       </div>
@@ -79,7 +79,7 @@ async function submit() {
         :disabled="saving"
         style="padding: 10px 12px; border: 1px solid #111827; border-radius: 8px; background: #111827; color: #fff;"
       >
-        {{ saving ? 'Saving...' : 'Create' }}
+        {{ saving ? 'Сохранение...' : 'Создать' }}
       </button>
     </form>
   </div>

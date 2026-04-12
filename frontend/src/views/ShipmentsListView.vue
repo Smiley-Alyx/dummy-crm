@@ -2,6 +2,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { api } from '../lib/api'
+import { formatDate } from '../lib/format'
 
 type Shipment = {
   id: number
@@ -45,20 +46,20 @@ async function fetchShipments() {
     })
     shipments.value = res.data.data
   } catch (e: any) {
-    error.value = e?.message ?? 'Failed to load shipments'
+    error.value = e?.message ?? 'Не удалось загрузить отгрузки'
   } finally {
     loading.value = false
   }
 }
 
 async function removeShipment(id: number) {
-  if (!confirm('Delete shipment?')) return
+  if (!confirm('Удалить отгрузку?')) return
 
   try {
     await api.delete(`/api/shipments/${id}`)
     await fetchShipments()
   } catch (e: any) {
-    alert(e?.message ?? 'Failed to delete shipment')
+    alert(e?.message ?? 'Не удалось удалить отгрузку')
   }
 }
 
@@ -69,25 +70,25 @@ onMounted(fetchShipments)
   <div style="max-width: 900px; margin: 0 auto; padding: 24px;">
     <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
       <div style="display: flex; align-items: baseline; gap: 12px;">
-        <h1 style="margin: 0;">Shipments</h1>
-        <span style="color: #6b7280;">Project #{{ projectId }}</span>
+        <h1 style="margin: 0;">Отгрузки</h1>
+        <span style="color: #6b7280;">Проект #{{ projectId }}</span>
       </div>
-      <RouterLink :to="`/projects/${projectId}/shipments/new`">Create</RouterLink>
+      <RouterLink :to="`/projects/${projectId}/shipments/new`">Создать</RouterLink>
     </div>
 
     <div style="margin-top: 12px;">
-      <RouterLink to="/projects">← Back to projects</RouterLink>
+      <RouterLink to="/projects">← Назад к проектам</RouterLink>
     </div>
 
-    <div v-if="loading" style="margin-top: 16px;">Loading...</div>
+    <div v-if="loading" style="margin-top: 16px;">Загрузка...</div>
     <div v-else-if="error" style="margin-top: 16px; color: #b91c1c;">{{ error }}</div>
 
     <table v-else style="width: 100%; margin-top: 16px; border-collapse: collapse;">
       <thead>
         <tr>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Title</th>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Planned dates</th>
-          <th style="text-align: right; border-bottom: 1px solid #e5e7eb; padding: 8px;">Actions</th>
+          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Название</th>
+          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Плановые даты</th>
+          <th style="text-align: right; border-bottom: 1px solid #e5e7eb; padding: 8px;">Действия</th>
         </tr>
       </thead>
       <tbody>
@@ -96,14 +97,14 @@ onMounted(fetchShipments)
             <RouterLink :to="`/projects/${projectId}/shipments/${s.id}`">{{ s.title }}</RouterLink>
           </td>
           <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">
-            <span>{{ s.planned_start_date ?? '—' }}</span>
+            <span>{{ formatDate(s.planned_start_date) }}</span>
             <span> → </span>
-            <span>{{ s.planned_due_date ?? '—' }}</span>
+            <span>{{ formatDate(s.planned_due_date) }}</span>
           </td>
           <td style="border-bottom: 1px solid #f3f4f6; padding: 8px; text-align: right;">
-            <RouterLink :to="`/projects/${projectId}/shipments/${s.id}`">Open</RouterLink>
+            <RouterLink :to="`/projects/${projectId}/shipments/${s.id}`">Открыть</RouterLink>
             <span> | </span>
-            <a href="#" @click.prevent="removeShipment(s.id)">Delete</a>
+            <a href="#" @click.prevent="removeShipment(s.id)">Удалить</a>
           </td>
         </tr>
       </tbody>

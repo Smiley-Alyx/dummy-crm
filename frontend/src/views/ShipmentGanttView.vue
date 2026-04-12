@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { api } from '../lib/api'
+import { formatDate } from '../lib/format'
 
 type Shipment = {
   id: number
@@ -140,7 +141,7 @@ async function fetchGantt() {
     today.value = res.data.today
     tasks.value = res.data.tasks
   } catch (e: any) {
-    error.value = e?.response?.data?.message ?? e?.message ?? 'Failed to load gantt'
+    error.value = e?.response?.data?.message ?? e?.message ?? 'Не удалось загрузить диаграмму Ганта'
   } finally {
     loading.value = false
   }
@@ -162,8 +163,8 @@ onMounted(fetchGantt)
   <div style="max-width: 1100px; margin: 0 auto; padding: 24px;">
     <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px;">
       <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
-        <h1 style="margin: 0;">Gantt</h1>
-        <span style="color: #6b7280;">Shipment #{{ shipmentId }}</span>
+        <h1 style="margin: 0;">Гант</h1>
+        <span style="color: #6b7280;">Отгрузка №{{ shipmentId }}</span>
         <span v-if="shipment" style="color: #111827;">— {{ shipment.title }}</span>
       </div>
 
@@ -173,32 +174,32 @@ onMounted(fetchGantt)
           @click="downloadExport"
           style="padding: 8px 10px; border: 1px solid #111827; border-radius: 8px; background: #111827; color: #fff;"
         >
-          Export XLSX
+          Экспорт XLSX
         </button>
       </div>
     </div>
 
     <div style="margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap;">
-      <RouterLink :to="`/projects/${projectId}/shipments/${shipmentId}`">← Back to shipment</RouterLink>
+      <RouterLink :to="`/projects/${projectId}/shipments/${shipmentId}`">← Назад к отгрузке</RouterLink>
     </div>
 
     <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
       <span style="display: inline-flex; align-items: center; gap: 6px;">
-        <span style="width: 12px; height: 12px; background: #C6EFCE; border: 1px solid #e5e7eb;"></span> Green
+        <span style="width: 12px; height: 12px; background: #C6EFCE; border: 1px solid #e5e7eb;"></span> В срок
       </span>
       <span style="display: inline-flex; align-items: center; gap: 6px;">
-        <span style="width: 12px; height: 12px; background: #FFEB9C; border: 1px solid #e5e7eb;"></span> Yellow
+        <span style="width: 12px; height: 12px; background: #FFEB9C; border: 1px solid #e5e7eb;"></span> Риск
       </span>
       <span style="display: inline-flex; align-items: center; gap: 6px;">
-        <span style="width: 12px; height: 12px; background: #FFC7CE; border: 1px solid #e5e7eb;"></span> Red
+        <span style="width: 12px; height: 12px; background: #FFC7CE; border: 1px solid #e5e7eb;"></span> Просрочено
       </span>
       <span style="display: inline-flex; align-items: center; gap: 6px;">
-        <span style="width: 12px; height: 12px; background: #fff; border: 1px solid #e5e7eb;"></span> White (not started)
+        <span style="width: 12px; height: 12px; background: #fff; border: 1px solid #e5e7eb;"></span> Не начато
       </span>
-      <span style="color: #6b7280;">Today outlined in blue; control date has thick border</span>
+      <span style="color: #6b7280;">Сегодня — синяя обводка; контрольная точка — толстая рамка</span>
     </div>
 
-    <div v-if="loading" style="margin-top: 16px;">Loading...</div>
+    <div v-if="loading" style="margin-top: 16px;">Загрузка...</div>
     <div v-else-if="error" style="margin-top: 16px; color: #b91c1c;">{{ error }}</div>
 
     <div v-else style="margin-top: 16px; overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 10px;">
@@ -206,7 +207,7 @@ onMounted(fetchGantt)
         <thead>
           <tr>
             <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e5e7eb; position: sticky; left: 0; background: #fff; z-index: 2; min-width: 320px;">
-              Task
+              Задача
             </th>
             <th
               v-for="d in calendarDays"
@@ -226,11 +227,11 @@ onMounted(fetchGantt)
                 <div>
                   <div>{{ t.title }}</div>
                   <div style="font-size: 12px; color: #6b7280;">
-                    start: {{ t.start_date }}
+                    старт: {{ formatDate(t.start_date) }}
                     <span> | </span>
-                    due: {{ t.effective_due_date ?? '—' }}
+                    дедлайн: {{ formatDate(t.effective_due_date) }}
                     <span> | </span>
-                    stage: {{ t.stage }}
+                    стадия: {{ t.stage }}
                   </div>
                 </div>
                 <div style="font-size: 12px; color: #6b7280;">#{{ t.id }}</div>

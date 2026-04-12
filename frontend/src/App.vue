@@ -5,9 +5,9 @@ import { RouterLink, RouterView } from 'vue-router'
 <template>
   <div style="max-width: 900px; margin: 0 auto; padding: 16px;">
     <header style="display: flex; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
-      <RouterLink to="/projects">Projects</RouterLink>
-      <RouterLink to="/notes">Notes</RouterLink>
-      <RouterLink to="/time">Time</RouterLink>
+      <RouterLink to="/projects">Проекты</RouterLink>
+      <RouterLink to="/notes">Заметки</RouterLink>
+      <RouterLink to="/time">Время</RouterLink>
     </header>
 
     <main style="padding-top: 16px;">

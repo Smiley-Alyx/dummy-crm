@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { api } from '../lib/api'
+import { formatDate, formatMinutes } from '../lib/format'
 
 type TimeEntry = {
   id: number
@@ -61,20 +62,20 @@ async function fetchAll() {
     timeEntries.value = entriesRes.data.data
     summary.value = summaryRes.data
   } catch (e: any) {
-    error.value = e?.message ?? 'Failed to load time entries'
+    error.value = e?.message ?? 'Не удалось загрузить записи времени'
   } finally {
     loading.value = false
   }
 }
 
 async function removeEntry(id: number) {
-  if (!confirm('Delete entry?')) return
+  if (!confirm('Удалить запись?')) return
 
   try {
     await api.delete(`/api/time-entries/${id}`)
     await fetchAll()
   } catch (e: any) {
-    alert(e?.message ?? 'Failed to delete entry')
+    alert(e?.message ?? 'Не удалось удалить запись')
   }
 }
 
@@ -84,58 +85,58 @@ onMounted(fetchAll)
 <template>
   <div style="max-width: 900px; margin: 0 auto; padding: 24px;">
     <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-      <h1 style="margin: 0;">Time tracking</h1>
-      <RouterLink to="/time/new">Add</RouterLink>
+      <h1 style="margin: 0;">Учёт времени</h1>
+      <RouterLink to="/time/new">Добавить</RouterLink>
     </div>
 
     <div style="margin-top: 16px; display: grid; gap: 12px;">
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end;">
         <label>
-          Project ID
-          <input v-model="projectId" inputmode="numeric" placeholder="e.g. 1" style="display: block; width: 100%;" />
+          Проект ID
+          <input v-model="projectId" inputmode="numeric" placeholder="например, 1" style="display: block; width: 100%;" />
         </label>
 
         <label>
-          From
+          С
           <input v-model="from" type="date" style="display: block; width: 100%;" />
         </label>
 
         <label>
-          To
+          По
           <input v-model="to" type="date" style="display: block; width: 100%;" />
         </label>
 
-        <button type="button" @click="fetchAll">Apply</button>
+        <button type="button" @click="fetchAll">Применить</button>
       </div>
 
       <div v-if="summary" style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px;">
-        <div><strong>Total:</strong> {{ summary.total_minutes }} min ({{ totalHours }} h)</div>
+        <div><strong>Итого:</strong> {{ formatMinutes(summary.total_minutes) }} ({{ totalHours }} ч)</div>
       </div>
     </div>
 
-    <div v-if="loading" style="margin-top: 16px;">Loading...</div>
+    <div v-if="loading" style="margin-top: 16px;">Загрузка...</div>
     <div v-else-if="error" style="margin-top: 16px; color: #b91c1c;">{{ error }}</div>
 
     <table v-else style="width: 100%; margin-top: 16px; border-collapse: collapse;">
       <thead>
         <tr>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Date</th>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Project</th>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Minutes</th>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Note</th>
-          <th style="text-align: right; border-bottom: 1px solid #e5e7eb; padding: 8px;">Actions</th>
+          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Дата</th>
+          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Проект</th>
+          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Время</th>
+          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Комментарий</th>
+          <th style="text-align: right; border-bottom: 1px solid #e5e7eb; padding: 8px;">Действия</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="t in timeEntries" :key="t.id">
-          <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ t.entry_date }}</td>
+          <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ formatDate(t.entry_date) }}</td>
           <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ t.project_id }}</td>
-          <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ t.minutes }}</td>
+          <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ formatMinutes(t.minutes) }}</td>
           <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ t.note ?? '—' }}</td>
           <td style="border-bottom: 1px solid #f3f4f6; padding: 8px; text-align: right;">
-            <RouterLink :to="`/time/${t.id}/edit`">Edit</RouterLink>
+            <RouterLink :to="`/time/${t.id}/edit`">Изменить</RouterLink>
             <span> | </span>
-            <a href="#" @click.prevent="removeEntry(t.id)">Delete</a>
+            <a href="#" @click.prevent="removeEntry(t.id)">Удалить</a>
           </td>
         </tr>
       </tbody>

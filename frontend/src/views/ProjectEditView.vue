@@ -38,7 +38,7 @@ async function load() {
     starts_on.value = res.data.starts_on ?? ''
     ends_on.value = res.data.ends_on ?? ''
   } catch (e: any) {
-    error.value = e?.response?.data?.message ?? e?.message ?? 'Failed to load project'
+    error.value = e?.response?.data?.message ?? e?.message ?? 'Не удалось загрузить проект'
   } finally {
     loading.value = false
   }
@@ -59,7 +59,7 @@ async function submit() {
 
     await router.push('/projects')
   } catch (e: any) {
-    error.value = e?.response?.data?.message ?? e?.message ?? 'Failed to update project'
+    error.value = e?.response?.data?.message ?? e?.message ?? 'Не удалось обновить проект'
   } finally {
     saving.value = false
   }
@@ -71,43 +71,43 @@ onMounted(load)
 <template>
   <div style="max-width: 900px; margin: 0 auto; padding: 24px;">
     <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-      <h1 style="margin: 0;">Edit project</h1>
-      <RouterLink to="/projects">Back</RouterLink>
+      <h1 style="margin: 0;">Редактировать проект</h1>
+      <RouterLink to="/projects">Назад</RouterLink>
     </div>
 
-    <div v-if="loading" style="margin-top: 16px;">Loading...</div>
+    <div v-if="loading" style="margin-top: 16px;">Загрузка...</div>
     <div v-else>
       <form @submit.prevent="submit" style="margin-top: 16px; display: grid; gap: 12px;">
         <label>
-          Name
+          Название
           <input v-model="name" required style="display: block; width: 100%;" />
         </label>
 
         <label>
-          Description
+          Описание
           <textarea v-model="description" rows="4" style="display: block; width: 100%;"></textarea>
         </label>
 
         <label>
-          Status
+          Статус
           <input v-model="status" style="display: block; width: 100%;" />
         </label>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <label>
-            Starts on
+            Дата старта
             <input v-model="starts_on" type="date" style="display: block; width: 100%;" />
           </label>
 
           <label>
-            Ends on
+            Дата завершения
             <input v-model="ends_on" type="date" style="display: block; width: 100%;" />
           </label>
         </div>
 
         <div v-if="error" style="color: #b91c1c;">{{ error }}</div>
 
-        <button type="submit" :disabled="saving">{{ saving ? 'Saving...' : 'Save' }}</button>
+        <button type="submit" :disabled="saving">{{ saving ? 'Сохранение...' : 'Сохранить' }}</button>
       </form>
     </div>
   </div>

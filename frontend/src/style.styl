@@ -579,3 +579,38 @@ code {
 .gantt-cell--today {
   box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.8);
 }
+
+.gantt-group-head {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: var(--sheet-text);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.gantt-group-head:hover {
+  background: rgba(26, 115, 232, 0.06);
+}
+
+.gantt-group-head__chev {
+  width: 14px;
+  display: inline-block;
+  color: var(--sheet-muted);
+}
+
+.gantt-group-head__title {
+  font-weight: 800;
+}
+
+.gantt-group-head__meta {
+  margin-left: auto;
+  color: var(--sheet-muted);
+  font-weight: 600;
+  font-size: 12px;
+}

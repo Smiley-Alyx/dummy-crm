@@ -305,6 +305,15 @@ function toggleShipment(shipmentId: number | null) {
   shipmentOpen.value[key] = !isShipmentOpen(shipmentId)
 }
 
+function shipmentTasksCount(shipmentId: number | null): number {
+  return tasksByShipment.value.get(shipmentId ?? null)?.length ?? 0
+}
+
+function shipmentRemainingHours(shipmentId: number | null): number {
+  const arr = tasksByShipment.value.get(shipmentId ?? null) ?? []
+  return arr.reduce((sum, t) => sum + (t.remaining_hours ?? 0), 0)
+}
+
 async function fetchAll() {
   loading.value = true
   error.value = null
@@ -411,10 +420,14 @@ onMounted(fetchAll)
 
           <tbody v-for="s in orderedShipmentIds" :key="`ship-${shipmentKey(s)}`">
             <tr>
-              <td class="sheet-sticky-col" colspan="4" style="font-weight: 700; background: var(--sheet-header);">
-                <a class="sheet-link" href="#" @click.prevent="toggleShipment(s)">
-                  {{ isShipmentOpen(s) ? '▾' : '▸' }} {{ shipmentTitle(s) }}
-                </a>
+              <td class="sheet-sticky-col" colspan="4" style="font-weight: 700; background: var(--sheet-header); padding: 0;">
+                <button type="button" class="gantt-group-head" @click="toggleShipment(s)">
+                  <span class="gantt-group-head__chev">{{ isShipmentOpen(s) ? '▾' : '▸' }}</span>
+                  <span class="gantt-group-head__title">{{ shipmentTitle(s) }}</span>
+                  <span class="gantt-group-head__meta">
+                    {{ shipmentTasksCount(s) }} задач · {{ shipmentRemainingHours(s).toFixed(1) }}ч
+                  </span>
+                </button>
               </td>
               <td v-for="d in calendarDays" :key="`${shipmentKey(s)}-${d.ymd}`" class="gantt-day-td" style="background: var(--sheet-header);"></td>
             </tr>

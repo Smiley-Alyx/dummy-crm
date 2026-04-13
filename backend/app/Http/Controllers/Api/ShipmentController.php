@@ -398,6 +398,90 @@ class ShipmentController extends Controller
         ]);
     }
 
+    public function burndown(Request $request, Shipment $shipment)
+    {
+        $today = CarbonImmutable::today();
+
+        $tasks = Task::query()
+            ->where('shipment_id', $shipment->id)
+            ->with(['workLogs'])
+            ->orderBy('order')
+            ->orderBy('id')
+            ->get();
+
+        $totalEstimate = (float) $tasks->sum('estimate_hours');
+
+        $minStart = null;
+        $maxDue = null;
+
+        foreach ($tasks as $task) {
+            $startDate = CarbonImmutable::parse($task->start_date);
+            $minStart = $minStart ? ($startDate->lt($minStart) ? $startDate : $minStart) : $startDate;
+
+            $due = $task->due_date ? CarbonImmutable::parse($task->due_date) : null;
+            if ($due) {
+                $maxDue = $maxDue ? ($due->gt($maxDue) ? $due : $maxDue) : $due;
+            }
+        }
+
+        $minStart = $minStart ?? $today;
+        $maxDue = $maxDue ?? $today;
+
+        $calendarDays = [];
+        $d = $minStart;
+        while ($d->lte($maxDue)) {
+            if (self::isWorkday($d)) {
+                $calendarDays[] = $d;
+            }
+            $d = $d->addDay();
+        }
+
+        if (count($calendarDays) === 0) {
+            $calendarDays = [$today];
+        }
+
+        $actualByDateMinutes = [];
+        foreach ($tasks as $task) {
+            foreach ($task->workLogs as $log) {
+                $k = CarbonImmutable::parse($log->work_date)->toDateString();
+                $actualByDateMinutes[$k] = ($actualByDateMinutes[$k] ?? 0) + (int) $log->minutes;
+            }
+        }
+
+        ksort($actualByDateMinutes);
+
+        $burndownDays = max(1, count($calendarDays));
+        $spentCumulative = 0.0;
+
+        $points = [];
+        for ($i = 0; $i < $burndownDays; $i++) {
+            $plannedRemaining = $burndownDays > 0
+                ? max(0.0, $totalEstimate - ($totalEstimate / $burndownDays) * $i)
+                : $totalEstimate;
+
+            $dateKey = isset($calendarDays[$i]) ? $calendarDays[$i]->toDateString() : null;
+            if ($dateKey && isset($actualByDateMinutes[$dateKey])) {
+                $spentCumulative += ($actualByDateMinutes[$dateKey] / 60.0);
+            }
+            $actualRemaining = max(0.0, $totalEstimate - $spentCumulative);
+
+            $points[] = [
+                'i' => $i,
+                'date' => $dateKey,
+                'planned_remaining_hours' => round($plannedRemaining, 2),
+                'actual_remaining_hours' => round($actualRemaining, 2),
+                'spent_cumulative_hours' => round($spentCumulative, 2),
+            ];
+        }
+
+        return response()->json([
+            'shipment' => $shipment,
+            'today' => $today->toDateString(),
+            'total_estimate_hours' => round($totalEstimate, 2),
+            'points' => $points,
+        ]);
+    }
+
     private static function isWorkday(CarbonImmutable $date): bool
     {
         return $date->isWeekday();

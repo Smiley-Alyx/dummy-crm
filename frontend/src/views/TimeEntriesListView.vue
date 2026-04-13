@@ -83,63 +83,73 @@ onMounted(fetchAll)
 </script>
 
 <template>
-  <div style="max-width: 900px; margin: 0 auto; padding: 24px;">
-    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-      <h1 style="margin: 0;">Учёт времени</h1>
-      <RouterLink to="/time/new">Добавить</RouterLink>
-    </div>
-
-    <div style="margin-top: 16px; display: grid; gap: 12px;">
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end;">
-        <label>
-          Проект ID
-          <input v-model="projectId" inputmode="numeric" placeholder="например, 1" style="display: block; width: 100%;" />
-        </label>
-
-        <label>
-          С
-          <input v-model="from" type="date" style="display: block; width: 100%;" />
-        </label>
-
-        <label>
-          По
-          <input v-model="to" type="date" style="display: block; width: 100%;" />
-        </label>
-
-        <button type="button" @click="fetchAll">Применить</button>
+  <div class="sheet-page">
+    <div class="sheet-page-header">
+      <div>
+        <h1>Учёт времени</h1>
+        <div class="sheet-subtitle">Факт по минутам + сводка</div>
       </div>
 
-      <div v-if="summary" style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px;">
-        <div><strong>Итого:</strong> {{ formatMinutes(summary.total_minutes) }} ({{ totalHours }} ч)</div>
+      <div class="sheet-actions">
+        <RouterLink class="sheet-link" to="/time/new">Добавить</RouterLink>
       </div>
     </div>
 
-    <div v-if="loading" style="margin-top: 16px;">Загрузка...</div>
-    <div v-else-if="error" style="margin-top: 16px; color: #b91c1c;">{{ error }}</div>
+    <div class="sheet-body">
+      <div class="sheet-form" style="margin-bottom: 12px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
+          <label>
+            <div class="sheet-muted" style="font-size: 12px;">Проект ID</div>
+            <input v-model="projectId" class="sheet-input" inputmode="numeric" placeholder="например, 1" />
+          </label>
 
-    <table v-else style="width: 100%; margin-top: 16px; border-collapse: collapse;">
-      <thead>
-        <tr>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Дата</th>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Проект</th>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Время</th>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Комментарий</th>
-          <th style="text-align: right; border-bottom: 1px solid #e5e7eb; padding: 8px;">Действия</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="t in timeEntries" :key="t.id">
-          <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ formatDate(t.entry_date) }}</td>
-          <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ t.project_id }}</td>
-          <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ formatMinutes(t.minutes) }}</td>
-          <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ t.note ?? '—' }}</td>
-          <td style="border-bottom: 1px solid #f3f4f6; padding: 8px; text-align: right;">
-            <RouterLink :to="`/time/${t.id}/edit`">Изменить</RouterLink>
-            <span> | </span>
-            <a href="#" @click.prevent="removeEntry(t.id)">Удалить</a>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+          <label>
+            <div class="sheet-muted" style="font-size: 12px;">С</div>
+            <input v-model="from" class="sheet-input" type="date" />
+          </label>
+
+          <label>
+            <div class="sheet-muted" style="font-size: 12px;">По</div>
+            <input v-model="to" class="sheet-input" type="date" />
+          </label>
+
+          <button type="button" class="sheet-btn sheet-btn-primary" @click="fetchAll">Применить</button>
+        </div>
+
+        <div v-if="summary" class="sheet-muted" style="font-size: 13px;">
+          <strong>Итого:</strong> {{ formatMinutes(summary.total_minutes) }} ({{ totalHours }} ч)
+        </div>
+      </div>
+
+      <div v-if="loading">Загрузка...</div>
+      <div v-else-if="error" style="color: #b91c1c;">{{ error }}</div>
+
+      <div v-else class="sheet-table-wrap">
+        <table class="sheet-table">
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>Проект</th>
+              <th>Время</th>
+              <th>Комментарий</th>
+              <th class="right">Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="t in timeEntries" :key="t.id">
+              <td>{{ formatDate(t.entry_date) }}</td>
+              <td>{{ t.project_id }}</td>
+              <td>{{ formatMinutes(t.minutes) }}</td>
+              <td>{{ t.note ?? '—' }}</td>
+              <td class="right">
+                <RouterLink class="sheet-link" :to="`/time/${t.id}/edit`">Изменить</RouterLink>
+                <span> | </span>
+                <a class="sheet-link" href="#" @click.prevent="removeEntry(t.id)">Удалить</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </template>

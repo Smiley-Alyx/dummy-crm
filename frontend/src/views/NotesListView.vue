@@ -50,34 +50,44 @@ onMounted(fetchNotes)
 </script>
 
 <template>
-  <div style="max-width: 900px; margin: 0 auto; padding: 24px;">
-    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-      <h1 style="margin: 0;">Заметки</h1>
-      <RouterLink to="/notes/new">Создать</RouterLink>
+  <div class="sheet-page">
+    <div class="sheet-page-header">
+      <div>
+        <h1>Заметки</h1>
+        <div class="sheet-subtitle">Личные заметки и подсказки по проектам</div>
+      </div>
+
+      <div class="sheet-actions">
+        <RouterLink class="sheet-link" to="/notes/new">Создать</RouterLink>
+      </div>
     </div>
 
-    <div v-if="loading" style="margin-top: 16px;">Загрузка...</div>
-    <div v-else-if="error" style="margin-top: 16px; color: #b91c1c;">{{ error }}</div>
+    <div class="sheet-body">
+      <div v-if="loading">Загрузка...</div>
+      <div v-else-if="error" style="color: #b91c1c;">{{ error }}</div>
 
-    <table v-else style="width: 100%; margin-top: 16px; border-collapse: collapse;">
-      <thead>
-        <tr>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Заголовок</th>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Закреплено</th>
-          <th style="text-align: right; border-bottom: 1px solid #e5e7eb; padding: 8px;">Действия</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="n in notes" :key="n.id">
-          <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ n.title }}</td>
-          <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ n.is_pinned ? 'да' : 'нет' }}</td>
-          <td style="border-bottom: 1px solid #f3f4f6; padding: 8px; text-align: right;">
-            <RouterLink :to="`/notes/${n.id}/edit`">Изменить</RouterLink>
-            <span> | </span>
-            <a href="#" @click.prevent="removeNote(n.id)">Удалить</a>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+      <div v-else class="sheet-table-wrap">
+        <table class="sheet-table">
+          <thead>
+            <tr>
+              <th>Заголовок</th>
+              <th>Закреплено</th>
+              <th class="right">Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="n in notes" :key="n.id">
+              <td>{{ n.title }}</td>
+              <td>{{ n.is_pinned ? 'да' : 'нет' }}</td>
+              <td class="right">
+                <RouterLink class="sheet-link" :to="`/notes/${n.id}/edit`">Изменить</RouterLink>
+                <span> | </span>
+                <a class="sheet-link" href="#" @click.prevent="removeNote(n.id)">Удалить</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </template>

@@ -60,3 +60,18 @@ export function formatMinutes(minutes: number): string {
   if (m === 0) return `${h} ч`
   return `${h} ч ${m} мин`
 }
+
+export function formatStage(stage: string | null | undefined): string {
+  if (!stage) return '—'
+
+  const map: Record<string, string> = {
+    planned: 'План',
+    in_progress: 'В работе',
+    done: 'Готово',
+    dev: 'Разработка',
+    qa: 'Тестирование',
+    prod: 'Прод',
+  }
+
+  return map[stage] ?? stage
+}

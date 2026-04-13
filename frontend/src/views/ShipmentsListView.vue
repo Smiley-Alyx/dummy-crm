@@ -67,47 +67,51 @@ onMounted(fetchShipments)
 </script>
 
 <template>
-  <div style="max-width: 900px; margin: 0 auto; padding: 24px;">
-    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-      <div style="display: flex; align-items: baseline; gap: 12px;">
-        <h1 style="margin: 0;">Отгрузки</h1>
-        <span style="color: #6b7280;">Проект #{{ projectId }}</span>
+  <div class="sheet-page">
+    <div class="sheet-page-header">
+      <div>
+        <h1>Отгрузки</h1>
+        <div class="sheet-subtitle">Проект №{{ projectId }}</div>
       </div>
-      <RouterLink :to="`/projects/${projectId}/shipments/new`">Создать</RouterLink>
+
+      <div class="sheet-actions">
+        <RouterLink class="sheet-link" to="/projects">← К проектам</RouterLink>
+        <RouterLink class="sheet-link" :to="`/projects/${projectId}/shipments/new`">Создать</RouterLink>
+      </div>
     </div>
 
-    <div style="margin-top: 12px;">
-      <RouterLink to="/projects">← Назад к проектам</RouterLink>
+    <div class="sheet-body">
+      <div v-if="loading">Загрузка...</div>
+      <div v-else-if="error" style="color: #b91c1c;">{{ error }}</div>
+
+      <div v-else class="sheet-table-wrap">
+        <table class="sheet-table">
+          <thead>
+            <tr>
+              <th>Название</th>
+              <th>Плановые даты</th>
+              <th class="right">Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="s in shipments" :key="s.id">
+              <td>
+                <RouterLink class="sheet-link" :to="`/projects/${projectId}/shipments/${s.id}`">{{ s.title }}</RouterLink>
+              </td>
+              <td>
+                <span>{{ formatDate(s.planned_start_date) }}</span>
+                <span> → </span>
+                <span>{{ formatDate(s.planned_due_date) }}</span>
+              </td>
+              <td class="right">
+                <RouterLink class="sheet-link" :to="`/projects/${projectId}/shipments/${s.id}`">Открыть</RouterLink>
+                <span> | </span>
+                <a class="sheet-link" href="#" @click.prevent="removeShipment(s.id)">Удалить</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-
-    <div v-if="loading" style="margin-top: 16px;">Загрузка...</div>
-    <div v-else-if="error" style="margin-top: 16px; color: #b91c1c;">{{ error }}</div>
-
-    <table v-else style="width: 100%; margin-top: 16px; border-collapse: collapse;">
-      <thead>
-        <tr>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Название</th>
-          <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Плановые даты</th>
-          <th style="text-align: right; border-bottom: 1px solid #e5e7eb; padding: 8px;">Действия</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="s in shipments" :key="s.id">
-          <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">
-            <RouterLink :to="`/projects/${projectId}/shipments/${s.id}`">{{ s.title }}</RouterLink>
-          </td>
-          <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">
-            <span>{{ formatDate(s.planned_start_date) }}</span>
-            <span> → </span>
-            <span>{{ formatDate(s.planned_due_date) }}</span>
-          </td>
-          <td style="border-bottom: 1px solid #f3f4f6; padding: 8px; text-align: right;">
-            <RouterLink :to="`/projects/${projectId}/shipments/${s.id}`">Открыть</RouterLink>
-            <span> | </span>
-            <a href="#" @click.prevent="removeShipment(s.id)">Удалить</a>
-          </td>
-        </tr>
-      </tbody>
-    </table>
   </div>
 </template>

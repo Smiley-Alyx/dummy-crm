@@ -2,7 +2,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { api } from '../lib/api'
-import { formatDate } from '../lib/format'
+import { formatDate, formatStage } from '../lib/format'
+import BurndownChart from '../components/BurndownChart.vue'
 
 type Shipment = {
   id: number
@@ -33,6 +34,19 @@ type GanttResponse = {
   tasks: GanttTask[]
 }
 
+type BurndownPoint = {
+  i: number
+  date: string | null
+  planned_remaining_hours: number
+  actual_remaining_hours: number
+  spent_cumulative_hours: number
+}
+
+type BurndownResponse = {
+  total_estimate_hours: number
+  points: BurndownPoint[]
+}
+
 const route = useRoute()
 const projectId = computed(() => Number(route.params.projectId))
 const shipmentId = computed(() => Number(route.params.shipmentId))
@@ -43,6 +57,9 @@ const error = ref<string | null>(null)
 const shipment = ref<Shipment | null>(null)
 const today = ref<string>('')
 const tasks = ref<GanttTask[]>([])
+
+const burndownTotal = ref<number>(0)
+const burndownPoints = ref<BurndownPoint[]>([])
 
 function parseDate(s: string): Date {
   const [y, m, d] = s.split('-').map((x) => Number(x))
@@ -136,10 +153,17 @@ async function fetchGantt() {
   error.value = null
 
   try {
-    const res = await api.get<GanttResponse>(`/api/shipments/${shipmentId.value}/gantt`)
-    shipment.value = res.data.shipment
-    today.value = res.data.today
-    tasks.value = res.data.tasks
+    const [ganttRes, burndownRes] = await Promise.all([
+      api.get<GanttResponse>(`/api/shipments/${shipmentId.value}/gantt`),
+      api.get<BurndownResponse>(`/api/shipments/${shipmentId.value}/burndown`),
+    ])
+
+    shipment.value = ganttRes.data.shipment
+    today.value = ganttRes.data.today
+    tasks.value = ganttRes.data.tasks
+
+    burndownTotal.value = burndownRes.data.total_estimate_hours
+    burndownPoints.value = burndownRes.data.points
   } catch (e: any) {
     error.value = e?.response?.data?.message ?? e?.message ?? 'Не удалось загрузить диаграмму Ганта'
   } finally {
@@ -160,30 +184,23 @@ onMounted(fetchGantt)
 </script>
 
 <template>
-  <div style="max-width: 1100px; margin: 0 auto; padding: 24px;">
-    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px;">
-      <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
-        <h1 style="margin: 0;">Гант</h1>
-        <span style="color: #6b7280;">Отгрузка №{{ shipmentId }}</span>
-        <span v-if="shipment" style="color: #111827;">— {{ shipment.title }}</span>
+  <div class="sheet-page">
+    <div class="sheet-page-header">
+      <div>
+        <h1>Гант</h1>
+        <div class="sheet-subtitle">Отгрузка №{{ shipmentId }}<span v-if="shipment"> — {{ shipment.title }}</span></div>
       </div>
 
-      <div style="display: flex; gap: 12px; align-items: center;">
-        <button
-          type="button"
-          @click="downloadExport"
-          style="padding: 8px 10px; border: 1px solid #111827; border-radius: 8px; background: #111827; color: #fff;"
-        >
-          Экспорт XLSX
-        </button>
+      <div class="sheet-actions">
+        <RouterLink class="sheet-link" :to="`/projects/${projectId}/shipments/${shipmentId}`">← Назад</RouterLink>
+        <button type="button" class="sheet-btn sheet-btn-primary" @click="downloadExport">Экспорт XLSX</button>
       </div>
     </div>
 
-    <div style="margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap;">
-      <RouterLink :to="`/projects/${projectId}/shipments/${shipmentId}`">← Назад к отгрузке</RouterLink>
-    </div>
+    <div class="sheet-body">
+      <BurndownChart v-if="burndownPoints.length" :points="burndownPoints" :total-estimate-hours="burndownTotal" />
 
-    <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
       <span style="display: inline-flex; align-items: center; gap: 6px;">
         <span style="width: 12px; height: 12px; background: #C6EFCE; border: 1px solid #e5e7eb;"></span> В срок
       </span>
@@ -199,20 +216,20 @@ onMounted(fetchGantt)
       <span style="color: #6b7280;">Сегодня — синяя обводка; контрольная точка — толстая рамка</span>
     </div>
 
-    <div v-if="loading" style="margin-top: 16px;">Загрузка...</div>
-    <div v-else-if="error" style="margin-top: 16px; color: #b91c1c;">{{ error }}</div>
+    <div v-if="loading">Загрузка...</div>
+    <div v-else-if="error" style="color: #b91c1c;">{{ error }}</div>
 
-    <div v-else style="margin-top: 16px; overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 10px;">
-      <table style="border-collapse: collapse; width: 100%; min-width: 980px;">
+    <div v-else class="sheet-table-wrap">
+      <table class="sheet-table" style="min-width: 980px;">
         <thead>
           <tr>
-            <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e5e7eb; position: sticky; left: 0; background: #fff; z-index: 2; min-width: 320px;">
+            <th class="sheet-sticky-col sheet-th" style="min-width: 340px;">
               Задача
             </th>
             <th
               v-for="d in calendarDays"
               :key="d.ymd"
-              style="padding: 8px 4px; border-bottom: 1px solid #e5e7eb; text-align: center; font-size: 12px; color: #6b7280;"
+              style="text-align: center; font-size: 12px; color: var(--sheet-muted);"
             >
               {{ d.label }}
             </th>
@@ -220,9 +237,7 @@ onMounted(fetchGantt)
         </thead>
         <tbody>
           <tr v-for="t in tasks" :key="t.id">
-            <td
-              style="padding: 8px; border-bottom: 1px solid #f3f4f6; position: sticky; left: 0; background: #fff; z-index: 1;"
-            >
+            <td class="sheet-sticky-col">
               <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;">
                 <div>
                   <div>{{ t.title }}</div>
@@ -231,18 +246,19 @@ onMounted(fetchGantt)
                     <span> | </span>
                     дедлайн: {{ formatDate(t.effective_due_date) }}
                     <span> | </span>
-                    стадия: {{ t.stage }}
+                    стадия: {{ formatStage(t.stage) }}
                   </div>
                 </div>
                 <div style="font-size: 12px; color: #6b7280;">#{{ t.id }}</div>
               </div>
             </td>
-            <td v-for="d in calendarDays" :key="d.ymd" style="padding: 2px; border-bottom: 1px solid #f3f4f6;">
+            <td v-for="d in calendarDays" :key="d.ymd" style="padding: 2px;">
               <div :style="cellStyle(t, d.ymd)"></div>
             </td>
           </tr>
         </tbody>
       </table>
+    </div>
     </div>
   </div>
 </template>

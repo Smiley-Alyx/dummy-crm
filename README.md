@@ -41,6 +41,14 @@ docker compose up --build
 - Backend: http://localhost:8000
 - Healthcheck: http://localhost:8000/api/health
 
+## Демо-данные
+
+Чтобы быстро наполнить систему тестовыми данными (4 разработчика, 5 отгрузок, 3–6 задач на отгрузку, назначения и отметки для burndown), запусти сидер:
+
+```bash
+docker compose exec backend php artisan db:seed
+```
+
 ## Интерфейс (SPA)
 
 - Проекты: `/#/projects` (в dev-режиме: `/projects`)

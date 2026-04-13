@@ -82,7 +82,8 @@ const windowWorkdays = ref(25)
 const viewStartYmd = ref<string | null>(null)
 
 function parseDate(s: string): Date {
-  const [y, m, d] = s.split('-').map((x) => Number(x))
+  const base = (s ?? '').slice(0, 10)
+  const [y, m, d] = base.split('-').map((x) => Number(x))
   return new Date(y, m - 1, d)
 }
 

@@ -98,6 +98,14 @@ function isWeekday(d: Date): boolean {
   return wd !== 0 && wd !== 6
 }
 
+function nextWorkdayYmd(ymd: string): string {
+  const cur = parseDate(ymd)
+  while (!isWeekday(cur)) {
+    cur.setDate(cur.getDate() + 1)
+  }
+  return toYmd(cur)
+}
+
 function addWorkdays(ymd: string, delta: number): string {
   const cur = parseDate(ymd)
   const step = delta >= 0 ? 1 : -1
@@ -108,6 +116,10 @@ function addWorkdays(ymd: string, delta: number): string {
   }
   return toYmd(cur)
 }
+
+const shiftWorkdays = computed(() => {
+  return Math.max(5, Math.floor(windowWorkdays.value / 2))
+})
 
 const minStartYmd = computed(() => {
   let min: string | null = null
@@ -166,7 +178,7 @@ function canNext(): boolean {
 function prevWindow() {
   const start = viewStartYmd.value ?? minStartYmd.value
   if (!start) return
-  viewStartYmd.value = addWorkdays(start, -10)
+  viewStartYmd.value = addWorkdays(start, -shiftWorkdays.value)
 
   const min = minStartYmd.value
   if (min && viewStartYmd.value < min) viewStartYmd.value = min
@@ -175,7 +187,33 @@ function prevWindow() {
 function nextWindow() {
   const start = viewStartYmd.value ?? minStartYmd.value
   if (!start) return
-  viewStartYmd.value = addWorkdays(start, 10)
+  viewStartYmd.value = addWorkdays(start, shiftWorkdays.value)
+}
+
+function gotoStart() {
+  const min = minStartYmd.value
+  if (!min) return
+  viewStartYmd.value = nextWorkdayYmd(min)
+}
+
+function gotoToday() {
+  if (!today.value) return
+  viewStartYmd.value = nextWorkdayYmd(today.value)
+
+  const min = minStartYmd.value
+  if (min && viewStartYmd.value < min) viewStartYmd.value = nextWorkdayYmd(min)
+}
+
+function gotoEnd() {
+  const max = maxEndYmd.value
+  if (!max) return
+
+  const last = nextWorkdayYmd(max)
+  const start = addWorkdays(last, -(windowWorkdays.value - 1))
+  viewStartYmd.value = nextWorkdayYmd(start)
+
+  const min = minStartYmd.value
+  if (min && viewStartYmd.value < min) viewStartYmd.value = nextWorkdayYmd(min)
 }
 
 function assigneeText(t: SheetTask): string {
@@ -347,6 +385,9 @@ onMounted(fetchAll)
           <div></div>
 
           <div style="display: inline-flex; gap: 8px; justify-content: flex-end;">
+            <button type="button" class="sheet-btn" :disabled="!minStartYmd" @click="gotoStart">К началу</button>
+            <button type="button" class="sheet-btn" :disabled="!today" @click="gotoToday">К сегодня</button>
+            <button type="button" class="sheet-btn" :disabled="!maxEndYmd" @click="gotoEnd">К концу</button>
             <button type="button" class="sheet-btn" :disabled="!canPrev()" @click="prevWindow">← Назад</button>
             <button type="button" class="sheet-btn" :disabled="!canNext()" @click="nextWindow">Вперёд →</button>
           </div>

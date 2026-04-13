@@ -17,6 +17,10 @@ Route::get('/health', function () {
 });
 
 Route::apiResource('projects', ProjectController::class);
+
+Route::get('projects/{project}/gantt-sheet', [ProjectController::class, 'ganttSheet']);
+Route::get('projects/{project}/burndown', [ProjectController::class, 'burndown']);
+Route::get('projects/{project}/gantt-export', [ProjectController::class, 'ganttExport']);
 Route::apiResource('notes', NoteController::class);
 Route::get('time-entries/summary', [TimeEntryController::class, 'summary']);
 Route::apiResource('time-entries', TimeEntryController::class);

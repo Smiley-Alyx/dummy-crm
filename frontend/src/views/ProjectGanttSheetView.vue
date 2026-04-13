@@ -12,6 +12,11 @@ type Project = {
   ends_on: string | null
 }
 
+function exportExcel() {
+  const base = String(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+  window.location.href = `${base}/api/projects/${projectId.value}/gantt-export`
+}
+
 type Shipment = {
   id: number
   project_id: number
@@ -361,6 +366,7 @@ onMounted(fetchAll)
 
       <div class="sheet-actions">
         <RouterLink class="sheet-link" :to="`/projects/${projectId}/shipments`">← Отгрузки</RouterLink>
+        <button type="button" class="sheet-btn" @click="exportExcel">Экспорт в Excel</button>
       </div>
     </div>
 

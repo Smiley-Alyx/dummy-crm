@@ -8,6 +8,13 @@ use App\Models\Shipment;
 use App\Models\Task;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProjectController extends Controller
 {
@@ -264,6 +271,215 @@ class ProjectController extends Controller
             'today' => $today->toDateString(),
             'total_estimate_hours' => round($totalEstimate, 2),
             'points' => $points,
+        ]);
+    }
+
+    public function ganttExport(Request $request, Project $project)
+    {
+        $today = CarbonImmutable::today();
+
+        $shipments = Shipment::query()
+            ->where('project_id', $project->id)
+            ->orderBy('id')
+            ->get()
+            ->keyBy('id');
+
+        $tasks = Task::query()
+            ->where('project_id', $project->id)
+            ->with(['assignments.user', 'workLogs'])
+            ->orderBy('shipment_id')
+            ->orderBy('order')
+            ->orderBy('id')
+            ->get();
+
+        $computed = [];
+        $minStart = $project->starts_on ? CarbonImmutable::parse($project->starts_on) : null;
+        $maxDue = $project->ends_on ? CarbonImmutable::parse($project->ends_on) : null;
+
+        foreach ($tasks as $task) {
+            $startDate = CarbonImmutable::parse($task->start_date);
+            $capacityPerDay = (float) $task->assignments->sum('capacity_hours_per_day');
+            $estimateHours = (float) $task->estimate_hours;
+
+            $plannedEnd = null;
+            $controlDate = null;
+            $durationDays = null;
+
+            if ($capacityPerDay > 0.0) {
+                $durationDays = (int) ceil($estimateHours / $capacityPerDay);
+                $durationDays = max(1, $durationDays);
+                $plannedEnd = self::addWorkdays($startDate, $durationDays - 1);
+                $controlDate = self::nextWorkday($plannedEnd);
+            }
+
+            $manualDueDate = $task->due_date ? CarbonImmutable::parse($task->due_date) : null;
+            $effectiveDue = $manualDueDate ?? $plannedEnd;
+
+            $spentMinutes = (int) $task->workLogs->sum('minutes');
+            $spentHours = $spentMinutes / 60.0;
+            $remainingHours = max(0.0, $estimateHours - $spentHours);
+
+            $color = 'white';
+
+            if ($today->lt($startDate)) {
+                $color = 'white';
+            } elseif ($capacityPerDay <= 0.0 || $effectiveDue === null) {
+                $color = 'yellow';
+            } else {
+                if ($today->gt($effectiveDue) && $task->stage !== Task::STAGE_PROD_DONE) {
+                    $color = 'red';
+                } else {
+                    $workdaysLeft = self::countWorkdaysInclusive($today, $effectiveDue);
+                    $maxPossible = $workdaysLeft * $capacityPerDay;
+                    if ($remainingHours > $maxPossible) {
+                        $color = 'yellow';
+                    } else {
+                        $color = 'green';
+                    }
+                }
+            }
+
+            $minStart = $minStart ? ($startDate->lt($minStart) ? $startDate : $minStart) : $startDate;
+            if ($effectiveDue) {
+                $maxDue = $maxDue ? ($effectiveDue->gt($maxDue) ? $effectiveDue : $maxDue) : $effectiveDue;
+            }
+
+            $computed[] = [
+                'task' => $task,
+                'start_date' => $startDate,
+                'planned_end_date' => $plannedEnd,
+                'control_date' => $controlDate,
+                'effective_due_date' => $effectiveDue,
+                'capacity_hours_per_day' => $capacityPerDay,
+                'estimate_hours' => $estimateHours,
+                'spent_minutes' => $spentMinutes,
+                'remaining_hours' => $remainingHours,
+                'color' => $color,
+            ];
+        }
+
+        $minStart = $minStart ?? $today;
+        $maxDue = $maxDue ?? $today;
+
+        $calendarDays = [];
+        $d = $minStart;
+        while ($d->lte($maxDue)) {
+            if (self::isWorkday($d)) {
+                $calendarDays[] = $d;
+            }
+            $d = $d->addDay();
+        }
+        if (count($calendarDays) === 0) {
+            $calendarDays = [$today];
+        }
+
+        $spreadsheet = new Spreadsheet();
+        $sheet1 = $spreadsheet->getActiveSheet();
+        $sheet1->setTitle('Гант');
+
+        $sheet1->setCellValue('A1', 'Задача');
+        $sheet1->setCellValue('B1', 'Исполнитель');
+        $sheet1->setCellValue('C1', 'Начало');
+        $sheet1->setCellValue('D1', 'Осталось (час/день)');
+        $sheet1->getStyle('A1:D1')->getFont()->setBold(true);
+        $sheet1->getStyle('A1:D1')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet1->getRowDimension(1)->setRowHeight(20);
+
+        $startCol = 5;
+        foreach ($calendarDays as $i => $day) {
+            $col = Coordinate::stringFromColumnIndex($startCol + $i);
+            $sheet1->setCellValue($col . '1', $day->format('d.m'));
+            $sheet1->getStyle($col . '1')->getAlignment()->setTextRotation(90);
+            $sheet1->getColumnDimension($col)->setWidth(3);
+        }
+
+        $sheet1->getColumnDimension('A')->setWidth(54);
+        $sheet1->getColumnDimension('B')->setWidth(32);
+        $sheet1->getColumnDimension('C')->setWidth(12);
+        $sheet1->getColumnDimension('D')->setWidth(20);
+
+        $row = 2;
+        $curShipmentId = null;
+
+        foreach ($computed as $item) {
+            /** @var Task $task */
+            $task = $item['task'];
+            $shipmentId = $task->shipment_id;
+
+            if ($shipmentId !== $curShipmentId) {
+                $curShipmentId = $shipmentId;
+                $shipmentTitle = $shipmentId && $shipments->has($shipmentId)
+                    ? (string) $shipments->get($shipmentId)->title
+                    : 'Без отгрузки';
+
+                $lastCol = Coordinate::stringFromColumnIndex($startCol + count($calendarDays) - 1);
+                $sheet1->mergeCells('A' . $row . ':' . $lastCol . $row);
+                $sheet1->setCellValue('A' . $row, $shipmentTitle);
+                $sheet1->getStyle('A' . $row)->getFont()->setBold(true);
+                $sheet1->getRowDimension($row)->setRowHeight(20);
+                $sheet1->getStyle('A' . $row . ':' . $lastCol . $row)
+                    ->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F1F3F4');
+
+                $row++;
+            }
+
+            $assignees = $task->assignments
+                ->map(fn ($a) => $a->user ? ($a->user->name . ' (' . $a->capacity_hours_per_day . ')') : (string) $a->user_id)
+                ->implode(', ');
+
+            $capacity = (float) $item['capacity_hours_per_day'];
+            $remaining = (float) $item['remaining_hours'];
+
+            $sheet1->setCellValue('A' . $row, $task->title);
+            $sheet1->setCellValue('B' . $row, $assignees);
+            $sheet1->setCellValue('C' . $row, CarbonImmutable::parse($item['start_date'])->format('d.m.Y'));
+            $sheet1->setCellValue('D' . $row, number_format($remaining, 2, '.', '') . '/' . number_format($capacity, 2, '.', ''));
+
+            $sheet1->getStyle('A' . $row . ':D' . $row)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+            $sheet1->getRowDimension($row)->setRowHeight(18);
+
+            $startDate = $item['start_date'];
+            $due = $item['effective_due_date'];
+            $control = $item['control_date'];
+
+            foreach ($calendarDays as $i => $day) {
+                $col = Coordinate::stringFromColumnIndex($startCol + $i);
+                $cell = $col . $row;
+
+                $fillColor = 'FFFFFF';
+
+                if ($day->lt($startDate)) {
+                    $fillColor = 'FFFFFF';
+                } elseif ($due && $day->lte($due)) {
+                    $fillColor = match ($item['color']) {
+                        'green' => 'C6EFCE',
+                        'yellow' => 'FFEB9C',
+                        'red' => 'FFC7CE',
+                        default => 'FFFFFF',
+                    };
+                } else {
+                    $fillColor = 'FFFFFF';
+                }
+
+                $sheet1->getStyle($cell)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($fillColor);
+
+                if ($control && $day->equalTo($control)) {
+                    $sheet1->getStyle($cell)->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THICK);
+                }
+            }
+
+            $row++;
+        }
+
+        $fileName = 'project_' . $project->id . '_gantt.xlsx';
+
+        return new StreamedResponse(function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Cache-Control' => 'max-age=0',
         ]);
     }
 

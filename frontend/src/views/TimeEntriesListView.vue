@@ -97,7 +97,7 @@ onMounted(fetchAll)
 
     <div class="sheet-body">
       <div class="sheet-form" style="margin-bottom: 12px;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
+        <div class="sheet-grid-4" style="align-items: end;">
           <label>
             <div class="sheet-muted" style="font-size: 12px;">Проект ID</div>
             <input v-model="projectId" class="sheet-input" inputmode="numeric" placeholder="например, 1" />

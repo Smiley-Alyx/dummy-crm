@@ -13,6 +13,7 @@ import ShipmentsListView from '../views/ShipmentsListView.vue'
 import ShipmentCreateView from '../views/ShipmentCreateView.vue'
 import ShipmentDetailView from '../views/ShipmentDetailView.vue'
 import ShipmentGanttView from '../views/ShipmentGanttView.vue'
+import ProjectGanttSheetView from '../views/ProjectGanttSheetView.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -22,6 +23,7 @@ export const router = createRouter({
     { path: '/projects/new', component: ProjectCreateView },
     { path: '/projects/:id/edit', component: ProjectEditView, props: true },
     { path: '/projects/:projectId/shipments', component: ShipmentsListView, props: true },
+    { path: '/projects/:projectId/gantt', component: ProjectGanttSheetView, props: true },
     { path: '/projects/:projectId/shipments/new', component: ShipmentCreateView, props: true },
     { path: '/projects/:projectId/shipments/:shipmentId', component: ShipmentDetailView, props: true },
     { path: '/projects/:projectId/shipments/:shipmentId/gantt', component: ShipmentGanttView, props: true },

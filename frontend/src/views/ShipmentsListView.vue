@@ -75,8 +75,9 @@ onMounted(fetchShipments)
       </div>
 
       <div class="sheet-actions">
-        <RouterLink class="sheet-link" to="/projects">← К проектам</RouterLink>
+        <RouterLink class="sheet-link" :to="`/projects/${projectId}/gantt`">Гант (проект)</RouterLink>
         <RouterLink class="sheet-link" :to="`/projects/${projectId}/shipments/new`">Создать</RouterLink>
+        <RouterLink class="sheet-link" to="/projects">← Проекты</RouterLink>
       </div>
     </div>
 

@@ -290,42 +290,40 @@ onMounted(fetchAll)
       <div v-else-if="error" style="color: #b91c1c;">{{ error }}</div>
 
       <div v-else style="display: grid; gap: 12px;">
-        <section style="border: 1px solid var(--sheet-border); border-radius: 10px; padding: 12px;">
-          <h2 style="margin: 0 0 12px; font-size: 14px; font-weight: 600;">Создать задачу</h2>
+        <section class="sheet-card">
+          <h2 class="sheet-section-title">Создать задачу</h2>
 
-          <form @submit.prevent="createTask" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; align-items: end;">
-            <label style="display: grid; gap: 6px;">
-              <span>Название</span>
-              <input v-model="newTitle" required class="sheet-input" />
-            </label>
+          <form @submit.prevent="createTask" class="sheet-form">
+            <div class="sheet-grid-4" style="align-items: end; grid-template-columns: 2fr 1fr 1fr 1fr;">
+              <label>
+                <div class="sheet-muted" style="font-size: 12px;">Название</div>
+                <input v-model="newTitle" required class="sheet-input" />
+              </label>
 
-            <label style="display: grid; gap: 6px;">
-              <span>Оценка (ч)</span>
-              <input
-                v-model.number="newEstimateHours"
-                type="number"
-                min="0.25"
-                step="0.25"
-                class="sheet-input"
-              />
-            </label>
+              <label>
+                <div class="sheet-muted" style="font-size: 12px;">Оценка (ч)</div>
+                <input
+                  v-model.number="newEstimateHours"
+                  type="number"
+                  min="0.25"
+                  step="0.25"
+                  class="sheet-input"
+                />
+              </label>
 
-            <label style="display: grid; gap: 6px;">
-              <span>Старт</span>
-              <input v-model="newStartDate" type="date" class="sheet-input" />
-            </label>
+              <label>
+                <div class="sheet-muted" style="font-size: 12px;">Старт</div>
+                <input v-model="newStartDate" type="date" class="sheet-input" />
+              </label>
 
-            <label style="display: grid; gap: 6px;">
-              <span>Дедлайн (опционально)</span>
-              <input v-model="newDueDate" type="date" class="sheet-input" />
-            </label>
+              <label>
+                <div class="sheet-muted" style="font-size: 12px;">Дедлайн (опционально)</div>
+                <input v-model="newDueDate" type="date" class="sheet-input" />
+              </label>
+            </div>
 
-            <div style="grid-column: 1 / -1;">
-              <button
-                type="submit"
-                :disabled="creatingTask"
-                class="sheet-btn sheet-btn-primary"
-              >
+            <div>
+              <button type="submit" :disabled="creatingTask" class="sheet-btn sheet-btn-primary">
                 {{ creatingTask ? 'Сохранение...' : 'Создать задачу' }}
               </button>
             </div>
@@ -333,47 +331,44 @@ onMounted(fetchAll)
         </section>
 
         <section>
-          <h2 style="margin: 0; font-size: 14px; font-weight: 600;">Задачи</h2>
+          <h2 class="sheet-section-title" style="margin-bottom: 0;">Задачи</h2>
 
           <div class="sheet-table-wrap" style="margin-top: 10px;">
             <table class="sheet-table">
               <thead>
                 <tr>
-                  <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">№</th>
-                  <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Название</th>
-                  <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Старт</th>
-                  <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Дедлайн</th>
-                  <th style="text-align: left; border-bottom: 1px solid #e5e7eb; padding: 8px;">Стадия</th>
-                  <th style="text-align: right; border-bottom: 1px solid #e5e7eb; padding: 8px;">Действия</th>
+                  <th>№</th>
+                  <th>Название</th>
+                  <th>Старт</th>
+                  <th>Дедлайн</th>
+                  <th>Стадия</th>
+                  <th class="right">Действия</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="t in tasks" :key="t.id">
-                  <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ t.order }}</td>
-                  <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ t.title }}</td>
-                  <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ formatDate(t.start_date) }}</td>
-                  <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ formatDate(t.due_date) }}</td>
-                  <td style="border-bottom: 1px solid #f3f4f6; padding: 8px;">{{ formatStage(t.stage) }}</td>
-                  <td style="border-bottom: 1px solid #f3f4f6; padding: 8px; text-align: right;">
-                    <a
-                      href="#"
-                      @click.prevent="toggleTaskDetails(t.id)"
-                    >
+                  <td>{{ t.order }}</td>
+                  <td>{{ t.title }}</td>
+                  <td>{{ formatDate(t.start_date) }}</td>
+                  <td>{{ formatDate(t.due_date) }}</td>
+                  <td>{{ formatStage(t.stage) }}</td>
+                  <td class="right">
+                    <a class="sheet-link" href="#" @click.prevent="toggleTaskDetails(t.id)">
                       {{ detailsOpen[t.id] ? 'Скрыть' : 'Управлять' }}
                     </a>
                     <span> | </span>
-                    <a href="#" @click.prevent="removeTask(t.id)">Удалить</a>
+                    <a class="sheet-link" href="#" @click.prevent="removeTask(t.id)">Удалить</a>
                   </td>
                 </tr>
 
                 <tr v-for="t in tasks" v-show="detailsOpen[t.id]" :key="`details-${t.id}`">
-                  <td colspan="6" style="border-bottom: 1px solid #f3f4f6; padding: 12px; background: #fafafa;">
+                  <td colspan="6" style="padding: 12px; background: #fafafa;">
                     <div style="display: grid; gap: 12px;">
                       <div v-if="detailsLoading[t.id]">Загрузка данных задачи...</div>
 
                       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <div style="border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; background: #fff;">
-                          <div style="font-weight: 600; margin-bottom: 8px;">Назначения</div>
+                        <div class="sheet-card">
+                          <div style="font-weight: 700; margin-bottom: 8px;">Назначения</div>
 
                           <div v-if="assignmentsByTask[t.id]?.length" style="display: grid; gap: 6px; margin-bottom: 10px;">
                             <div v-for="a in assignmentsByTask[t.id]" :key="a.id" style="display: flex; justify-content: space-between; gap: 12px;">
@@ -385,34 +380,32 @@ onMounted(fetchAll)
 
                           <form @submit.prevent="createAssignment(t.id)" style="display: flex; gap: 8px; align-items: end; flex-wrap: wrap;">
                             <label style="display: grid; gap: 6px;">
-                              <span>Исполнитель</span>
-                              <select v-model.number="assignUserId[t.id]" style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;">
+                              <div class="sheet-muted" style="font-size: 12px;">Исполнитель</div>
+                              <select v-model.number="assignUserId[t.id]" class="sheet-select">
                                 <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }} ({{ u.email }})</option>
                               </select>
                             </label>
 
                             <label style="display: grid; gap: 6px;">
-                              <span>ч/день</span>
+                              <div class="sheet-muted" style="font-size: 12px;">ч/день</div>
                               <input
                                 v-model.number="assignCapacity[t.id]"
                                 type="number"
                                 min="0.25"
                                 step="0.25"
-                                style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px; width: 120px;"
+                                class="sheet-input"
+                                style="width: 120px;"
                               />
                             </label>
 
-                            <button
-                              type="submit"
-                              style="padding: 10px 12px; border: 1px solid #111827; border-radius: 8px; background: #111827; color: #fff;"
-                            >
+                            <button type="submit" class="sheet-btn sheet-btn-primary">
                               Назначить
                             </button>
                           </form>
                         </div>
 
-                        <div style="border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; background: #fff;">
-                          <div style="font-weight: 600; margin-bottom: 8px;">Отметки (сегодня: {{ formatDate(todayYmd) }})</div>
+                        <div class="sheet-card">
+                          <div style="font-weight: 700; margin-bottom: 8px;">Отметки (сегодня: {{ formatDate(todayYmd) }})</div>
 
                           <div v-if="logsByTask[t.id]?.length" style="display: grid; gap: 6px; margin-bottom: 10px;">
                             <div v-for="l in logsByTask[t.id]" :key="l.id" style="display: flex; justify-content: space-between; gap: 12px;">
@@ -424,28 +417,26 @@ onMounted(fetchAll)
 
                           <form @submit.prevent="createWorkLog(t.id)" style="display: flex; gap: 8px; align-items: end; flex-wrap: wrap;">
                             <label style="display: grid; gap: 6px;">
-                              <span>Исполнитель</span>
-                              <select v-model.number="logUserId[t.id]" style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;">
+                              <div class="sheet-muted" style="font-size: 12px;">Исполнитель</div>
+                              <select v-model.number="logUserId[t.id]" class="sheet-select">
                                 <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }} ({{ u.email }})</option>
                               </select>
                             </label>
 
                             <label style="display: grid; gap: 6px;">
-                              <span>минут</span>
+                              <div class="sheet-muted" style="font-size: 12px;">минут</div>
                               <input
                                 v-model.number="logMinutes[t.id]"
                                 type="number"
                                 min="1"
                                 max="1440"
                                 step="1"
-                                style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px; width: 120px;"
+                                class="sheet-input"
+                                style="width: 120px;"
                               />
                             </label>
 
-                            <button
-                              type="submit"
-                              style="padding: 10px 12px; border: 1px solid #111827; border-radius: 8px; background: #111827; color: #fff;"
-                            >
+                            <button type="submit" class="sheet-btn sheet-btn-primary">
                               Отметить
                             </button>
                           </form>

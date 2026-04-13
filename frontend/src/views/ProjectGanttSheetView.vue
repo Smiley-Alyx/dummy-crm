@@ -244,23 +244,17 @@ function cellStyle(task: SheetTask, dayYmd: string) {
     bg = '#ffffff'
   }
 
-  const style: Record<string, string> = {
+  return {
     background: bg,
-    width: '20px',
-    height: '20px',
-    border: '1px solid var(--sheet-border)',
   }
+}
 
-  if (task.control_date && dayYmd === task.control_date) {
-    style.border = '2px solid #111827'
+function cellClass(task: SheetTask, dayYmd: string) {
+  return {
+    'gantt-cell': true,
+    'gantt-cell--control': Boolean(task.control_date && dayYmd === task.control_date),
+    'gantt-cell--today': Boolean(today.value && dayYmd === today.value),
   }
-
-  if (today.value && dayYmd === today.value) {
-    style.outline = '2px solid #2563eb'
-    style.outlineOffset = '-2px'
-  }
-
-  return style
 }
 
 const tasksByShipment = computed(() => {
@@ -402,14 +396,14 @@ onMounted(fetchAll)
       <div v-else-if="error" style="color: #b91c1c;">{{ error }}</div>
 
       <div v-else class="sheet-table-wrap">
-        <table class="sheet-table" style="min-width: 1200px;">
+        <table class="sheet-table gantt-sheet-table" style="min-width: 1200px;">
           <thead>
             <tr>
               <th class="sheet-sticky-col" style="min-width: 360px;">Задача</th>
               <th class="sheet-sticky-col" style="left: 360px; min-width: 260px;">Исполнитель</th>
               <th class="sheet-sticky-col" style="left: 620px; min-width: 120px;">Начало</th>
               <th class="sheet-sticky-col" style="left: 740px; min-width: 140px;">Осталось</th>
-              <th v-for="d in calendarDays" :key="d.ymd" style="text-align: center; font-size: 12px; color: var(--sheet-muted);">
+              <th v-for="d in calendarDays" :key="d.ymd" class="gantt-day-head">
                 {{ d.label }}
               </th>
             </tr>
@@ -422,7 +416,7 @@ onMounted(fetchAll)
                   {{ isShipmentOpen(s) ? '▾' : '▸' }} {{ shipmentTitle(s) }}
                 </a>
               </td>
-              <td v-for="d in calendarDays" :key="`${shipmentKey(s)}-${d.ymd}`" style="padding: 0; background: var(--sheet-header);"></td>
+              <td v-for="d in calendarDays" :key="`${shipmentKey(s)}-${d.ymd}`" class="gantt-day-td" style="background: var(--sheet-header);"></td>
             </tr>
 
             <tr v-for="t in tasksByShipment.get(s)" v-show="isShipmentOpen(s)" :key="t.id">
@@ -441,8 +435,8 @@ onMounted(fetchAll)
               <td class="sheet-sticky-col" style="left: 740px;">
                 {{ remainingText(t) }}
               </td>
-              <td v-for="d in calendarDays" :key="d.ymd" style="padding: 0;">
-                <div :style="cellStyle(t, d.ymd)"></div>
+              <td v-for="d in calendarDays" :key="d.ymd" class="gantt-day-td">
+                <div :class="cellClass(t, d.ymd)" :style="cellStyle(t, d.ymd)"></div>
               </td>
             </tr>
           </tbody>

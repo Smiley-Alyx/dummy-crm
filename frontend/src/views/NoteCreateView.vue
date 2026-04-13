@@ -32,31 +32,42 @@ async function submit() {
 </script>
 
 <template>
-  <div style="max-width: 900px; margin: 0 auto; padding: 24px;">
-    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-      <h1 style="margin: 0;">Создать заметку</h1>
-      <RouterLink to="/notes">Назад</RouterLink>
+  <div class="sheet-page">
+    <div class="sheet-page-header">
+      <div>
+        <h1>Создать заметку</h1>
+        <div class="sheet-subtitle">Новая заметка</div>
+      </div>
+      <div class="sheet-actions">
+        <RouterLink class="sheet-link" to="/notes">← Назад</RouterLink>
+      </div>
     </div>
 
-    <form @submit.prevent="submit" style="margin-top: 16px; display: grid; gap: 12px;">
-      <label>
-        Заголовок
-        <input v-model="title" required style="display: block; width: 100%;" />
-      </label>
+    <div class="sheet-body">
+      <form @submit.prevent="submit" class="sheet-form">
+        <label>
+          <div class="sheet-muted" style="font-size: 12px;">Заголовок</div>
+          <input v-model="title" required class="sheet-input" />
+        </label>
 
-      <label>
-        Текст
-        <textarea v-model="body" rows="6" style="display: block; width: 100%;"></textarea>
-      </label>
+        <label>
+          <div class="sheet-muted" style="font-size: 12px;">Текст</div>
+          <textarea v-model="body" rows="6" class="sheet-textarea"></textarea>
+        </label>
 
-      <label style="display: flex; gap: 8px; align-items: center;">
-        <input v-model="is_pinned" type="checkbox" />
-        Закрепить
-      </label>
+        <label style="display: flex; gap: 8px; align-items: center;">
+          <input v-model="is_pinned" type="checkbox" />
+          <span>Закрепить</span>
+        </label>
 
-      <div v-if="error" style="color: #b91c1c;">{{ error }}</div>
+        <div v-if="error" style="color: #b91c1c;">{{ error }}</div>
 
-      <button type="submit" :disabled="saving">{{ saving ? 'Сохранение...' : 'Создать' }}</button>
-    </form>
+        <div>
+          <button type="submit" class="sheet-btn sheet-btn-primary" :disabled="saving">
+            {{ saving ? 'Сохранение...' : 'Создать' }}
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </template>

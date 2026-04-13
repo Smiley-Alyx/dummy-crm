@@ -66,39 +66,50 @@ onMounted(load)
 </script>
 
 <template>
-  <div style="max-width: 900px; margin: 0 auto; padding: 24px;">
-    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-      <h1 style="margin: 0;">Редактировать запись</h1>
-      <RouterLink to="/time">Назад</RouterLink>
+  <div class="sheet-page">
+    <div class="sheet-page-header">
+      <div>
+        <h1>Редактировать запись</h1>
+        <div class="sheet-subtitle">Запись №{{ id }}</div>
+      </div>
+      <div class="sheet-actions">
+        <RouterLink class="sheet-link" to="/time">← Назад</RouterLink>
+      </div>
     </div>
 
-    <div v-if="loading" style="margin-top: 16px;">Загрузка...</div>
-    <div v-else>
-      <form @submit.prevent="submit" style="margin-top: 16px; display: grid; gap: 12px;">
-        <label>
-          Проект ID
-          <input v-model="project_id" required inputmode="numeric" style="display: block; width: 100%;" />
-        </label>
+    <div class="sheet-body">
+      <div v-if="loading">Загрузка...</div>
+      <div v-else>
+        <form @submit.prevent="submit" class="sheet-form">
+          <label>
+            <div class="sheet-muted" style="font-size: 12px;">Проект ID</div>
+            <input v-model="project_id" required inputmode="numeric" class="sheet-input" />
+          </label>
 
-        <label>
-          Дата
-          <input v-model="entry_date" required type="date" style="display: block; width: 100%;" />
-        </label>
+          <label>
+            <div class="sheet-muted" style="font-size: 12px;">Дата</div>
+            <input v-model="entry_date" required type="date" class="sheet-input" />
+          </label>
 
-        <label>
-          Минут
-          <input v-model="minutes" required inputmode="numeric" style="display: block; width: 100%;" />
-        </label>
+          <label>
+            <div class="sheet-muted" style="font-size: 12px;">Минут</div>
+            <input v-model="minutes" required inputmode="numeric" class="sheet-input" />
+          </label>
 
-        <label>
-          Комментарий
-          <input v-model="note" style="display: block; width: 100%;" />
-        </label>
+          <label>
+            <div class="sheet-muted" style="font-size: 12px;">Комментарий</div>
+            <input v-model="note" class="sheet-input" />
+          </label>
 
-        <div v-if="error" style="color: #b91c1c;">{{ error }}</div>
+          <div v-if="error" style="color: #b91c1c;">{{ error }}</div>
 
-        <button type="submit" :disabled="saving">{{ saving ? 'Сохранение...' : 'Сохранить' }}</button>
-      </form>
+          <div>
+            <button type="submit" class="sheet-btn sheet-btn-primary" :disabled="saving">
+              {{ saving ? 'Сохранение...' : 'Сохранить' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </template>

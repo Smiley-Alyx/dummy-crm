@@ -39,48 +39,49 @@ async function submit() {
 </script>
 
 <template>
-  <div style="max-width: 900px; margin: 0 auto; padding: 24px;">
-    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px;">
-      <h1 style="margin: 0;">Создать отгрузку</h1>
-      <RouterLink :to="`/projects/${projectId}/shipments`">Назад</RouterLink>
+  <div class="sheet-page">
+    <div class="sheet-page-header">
+      <div>
+        <h1>Создать отгрузку</h1>
+        <div class="sheet-subtitle">Проект №{{ projectId }}</div>
+      </div>
+      <div class="sheet-actions">
+        <RouterLink class="sheet-link" :to="`/projects/${projectId}/shipments`">← Назад</RouterLink>
+      </div>
     </div>
 
-    <div v-if="error" style="margin-top: 16px; color: #b91c1c;">{{ error }}</div>
+    <div class="sheet-body">
+      <div v-if="error" style="color: #b91c1c;">{{ error }}</div>
 
-    <form @submit.prevent="submit" style="margin-top: 16px; display: grid; gap: 12px;">
-      <label style="display: grid; gap: 6px;">
-        <span>Название</span>
-        <input v-model="title" required style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;" />
-      </label>
-
-      <label style="display: grid; gap: 6px;">
-        <span>Описание</span>
-        <textarea
-          v-model="description"
-          rows="4"
-          style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;"
-        ></textarea>
-      </label>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-        <label style="display: grid; gap: 6px;">
-          <span>План. старт</span>
-          <input v-model="plannedStartDate" type="date" style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;" />
+      <form @submit.prevent="submit" class="sheet-form" style="margin-top: 10px;">
+        <label>
+          <div class="sheet-muted" style="font-size: 12px;">Название</div>
+          <input v-model="title" required class="sheet-input" />
         </label>
 
-        <label style="display: grid; gap: 6px;">
-          <span>План. дедлайн</span>
-          <input v-model="plannedDueDate" type="date" style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;" />
+        <label>
+          <div class="sheet-muted" style="font-size: 12px;">Описание</div>
+          <textarea v-model="description" rows="4" class="sheet-textarea"></textarea>
         </label>
-      </div>
 
-      <button
-        type="submit"
-        :disabled="saving"
-        style="padding: 10px 12px; border: 1px solid #111827; border-radius: 8px; background: #111827; color: #fff;"
-      >
-        {{ saving ? 'Сохранение...' : 'Создать' }}
-      </button>
-    </form>
+        <div class="sheet-grid-2">
+          <label>
+            <div class="sheet-muted" style="font-size: 12px;">План. старт</div>
+            <input v-model="plannedStartDate" type="date" class="sheet-input" />
+          </label>
+
+          <label>
+            <div class="sheet-muted" style="font-size: 12px;">План. дедлайн</div>
+            <input v-model="plannedDueDate" type="date" class="sheet-input" />
+          </label>
+        </div>
+
+        <div>
+          <button type="submit" class="sheet-btn sheet-btn-primary" :disabled="saving">
+            {{ saving ? 'Сохранение...' : 'Создать' }}
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </template>

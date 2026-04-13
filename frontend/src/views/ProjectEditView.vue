@@ -69,46 +69,57 @@ onMounted(load)
 </script>
 
 <template>
-  <div style="max-width: 900px; margin: 0 auto; padding: 24px;">
-    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-      <h1 style="margin: 0;">Редактировать проект</h1>
-      <RouterLink to="/projects">Назад</RouterLink>
+  <div class="sheet-page">
+    <div class="sheet-page-header">
+      <div>
+        <h1>Редактировать проект</h1>
+        <div class="sheet-subtitle">Проект №{{ id }}</div>
+      </div>
+      <div class="sheet-actions">
+        <RouterLink class="sheet-link" to="/projects">← Назад</RouterLink>
+      </div>
     </div>
 
-    <div v-if="loading" style="margin-top: 16px;">Загрузка...</div>
-    <div v-else>
-      <form @submit.prevent="submit" style="margin-top: 16px; display: grid; gap: 12px;">
-        <label>
-          Название
-          <input v-model="name" required style="display: block; width: 100%;" />
-        </label>
-
-        <label>
-          Описание
-          <textarea v-model="description" rows="4" style="display: block; width: 100%;"></textarea>
-        </label>
-
-        <label>
-          Статус
-          <input v-model="status" style="display: block; width: 100%;" />
-        </label>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+    <div class="sheet-body">
+      <div v-if="loading">Загрузка...</div>
+      <div v-else>
+        <form @submit.prevent="submit" class="sheet-form">
           <label>
-            Дата старта
-            <input v-model="starts_on" type="date" style="display: block; width: 100%;" />
+            <div class="sheet-muted" style="font-size: 12px;">Название</div>
+            <input v-model="name" required class="sheet-input" />
           </label>
 
           <label>
-            Дата завершения
-            <input v-model="ends_on" type="date" style="display: block; width: 100%;" />
+            <div class="sheet-muted" style="font-size: 12px;">Описание</div>
+            <textarea v-model="description" rows="4" class="sheet-textarea"></textarea>
           </label>
-        </div>
 
-        <div v-if="error" style="color: #b91c1c;">{{ error }}</div>
+          <label>
+            <div class="sheet-muted" style="font-size: 12px;">Статус</div>
+            <input v-model="status" class="sheet-input" />
+          </label>
 
-        <button type="submit" :disabled="saving">{{ saving ? 'Сохранение...' : 'Сохранить' }}</button>
-      </form>
+          <div class="sheet-grid-2">
+            <label>
+              <div class="sheet-muted" style="font-size: 12px;">Дата старта</div>
+              <input v-model="starts_on" type="date" class="sheet-input" />
+            </label>
+
+            <label>
+              <div class="sheet-muted" style="font-size: 12px;">Дата завершения</div>
+              <input v-model="ends_on" type="date" class="sheet-input" />
+            </label>
+          </div>
+
+          <div v-if="error" style="color: #b91c1c;">{{ error }}</div>
+
+          <div>
+            <button type="submit" class="sheet-btn sheet-btn-primary" :disabled="saving">
+              {{ saving ? 'Сохранение...' : 'Сохранить' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </template>

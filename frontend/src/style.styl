@@ -475,6 +475,20 @@ code {
   vertical-align: top;
 }
 
+.sheet-table th,
+.sheet-table td {
+  border-right: 1px solid var(--sheet-border);
+}
+
+.sheet-table th:last-child,
+.sheet-table td:last-child {
+  border-right: none;
+}
+
+.sheet-table td {
+  height: 36px;
+}
+
 .sheet-table tr:hover td {
   background: #f8fbff;
 }

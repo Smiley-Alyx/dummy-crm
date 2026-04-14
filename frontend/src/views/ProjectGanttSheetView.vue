@@ -227,6 +227,14 @@ function assigneeText(t: SheetTask): string {
   return t.assignees.map((a) => `${a.name} (${a.capacity_hours_per_day}ч/д)`).join(', ')
 }
 
+function assigneeChips(t: SheetTask): { key: string; label: string }[] {
+  if (!t.assignees.length) return []
+  return t.assignees.map((a) => ({
+    key: String(a.user_id),
+    label: `${a.name} (${a.capacity_hours_per_day}ч/д)`,
+  }))
+}
+
 function remainingText(t: SheetTask): string {
   const cap = t.capacity_hours_per_day
   if (!cap) return `${t.remaining_hours.toFixed(1)}ч` 
@@ -447,7 +455,10 @@ onMounted(fetchAll)
                 </div>
               </td>
               <td class="sheet-sticky-col" style="left: 360px;">
-                <div class="sheet-muted" style="font-size: 13px;">{{ assigneeText(t) }}</div>
+                <div v-if="assigneeChips(t).length" class="gantt-assignees">
+                  <span v-for="a in assigneeChips(t)" :key="a.key" class="gantt-assignee-chip">{{ a.label }}</span>
+                </div>
+                <div v-else class="sheet-muted" style="font-size: 13px;">—</div>
               </td>
               <td class="sheet-sticky-col" style="left: 620px;">
                 {{ formatDate(t.start_date) }}

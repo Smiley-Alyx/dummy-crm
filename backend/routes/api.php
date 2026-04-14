@@ -36,6 +36,7 @@ Route::post('tasks/{task}/reschedule', [TaskController::class, 'reschedule']);
 Route::apiResource('tasks', TaskController::class);
 
 Route::apiResource('task-assignments', TaskAssignmentController::class);
+Route::get('task-work-logs/report', [TaskWorkLogController::class, 'report']);
 Route::apiResource('task-work-logs', TaskWorkLogController::class);
 
 Route::get('users', [UserController::class, 'index']);

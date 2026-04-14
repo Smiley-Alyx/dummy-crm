@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\TaskWorkLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TaskWorkLogController extends Controller
 {
@@ -32,6 +33,105 @@ class TaskWorkLogController extends Controller
         }
 
         return $query->paginate($perPage);
+    }
+
+    public function report(Request $request)
+    {
+        $data = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'project_id' => ['nullable', 'integer', 'exists:projects,id'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
+
+        $q = TaskWorkLog::query()
+            ->select([
+                'tasks.project_id as project_id',
+                'shipments.id as shipment_id',
+                'shipments.title as shipment_title',
+                'tasks.id as task_id',
+                'tasks.title as task_title',
+                DB::raw('sum(task_work_logs.minutes) as minutes'),
+            ])
+            ->join('tasks', 'tasks.id', '=', 'task_work_logs.task_id')
+            ->leftJoin('shipments', 'shipments.id', '=', 'tasks.shipment_id')
+            ->where('task_work_logs.user_id', $data['user_id'])
+            ->groupBy('tasks.project_id', 'shipments.id', 'shipments.title', 'tasks.id', 'tasks.title')
+            ->orderBy('tasks.project_id')
+            ->orderBy('shipments.id')
+            ->orderBy('tasks.id');
+
+        if (!empty($data['project_id'])) {
+            $q->where('tasks.project_id', $data['project_id']);
+        }
+        if (!empty($data['from'])) {
+            $q->whereDate('task_work_logs.work_date', '>=', $data['from']);
+        }
+        if (!empty($data['to'])) {
+            $q->whereDate('task_work_logs.work_date', '<=', $data['to']);
+        }
+
+        $rows = $q->get();
+
+        $projects = DB::table('projects')
+            ->select(['id', 'name'])
+            ->when(!empty($data['project_id']), fn ($sub) => $sub->where('id', $data['project_id']))
+            ->orderBy('id')
+            ->get()
+            ->keyBy('id');
+
+        $outProjects = [];
+        $totalMinutes = 0;
+
+        foreach ($rows as $r) {
+            $projectId = (int) $r->project_id;
+            $shipmentId = $r->shipment_id !== null ? (int) $r->shipment_id : null;
+            $taskId = (int) $r->task_id;
+            $minutes = (int) $r->minutes;
+
+            $totalMinutes += $minutes;
+
+            if (!isset($outProjects[$projectId])) {
+                $outProjects[$projectId] = [
+                    'project_id' => $projectId,
+                    'project_name' => (string) ($projects[$projectId]->name ?? ('#' . $projectId)),
+                    'minutes' => 0,
+                    'shipments' => [],
+                ];
+            }
+            $outProjects[$projectId]['minutes'] += $minutes;
+
+            $shipmentKey = $shipmentId === null ? 'null' : (string) $shipmentId;
+            if (!isset($outProjects[$projectId]['shipments'][$shipmentKey])) {
+                $outProjects[$projectId]['shipments'][$shipmentKey] = [
+                    'shipment_id' => $shipmentId,
+                    'shipment_title' => $shipmentId === null ? 'Без отгрузки' : (string) $r->shipment_title,
+                    'minutes' => 0,
+                    'tasks' => [],
+                ];
+            }
+            $outProjects[$projectId]['shipments'][$shipmentKey]['minutes'] += $minutes;
+
+            $outProjects[$projectId]['shipments'][$shipmentKey]['tasks'][] = [
+                'task_id' => $taskId,
+                'task_title' => (string) $r->task_title,
+                'minutes' => $minutes,
+            ];
+        }
+
+        $projectsList = array_values(array_map(function (array $p) {
+            $p['shipments'] = array_values($p['shipments']);
+            return $p;
+        }, $outProjects));
+
+        return response()->json([
+            'user_id' => (int) $data['user_id'],
+            'project_id' => !empty($data['project_id']) ? (int) $data['project_id'] : null,
+            'from' => $data['from'] ?? null,
+            'to' => $data['to'] ?? null,
+            'total_minutes' => $totalMinutes,
+            'projects' => $projectsList,
+        ]);
     }
 
     public function store(Request $request)

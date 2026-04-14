@@ -167,6 +167,29 @@ const calendarDays = computed(() => {
   return out
 })
 
+function ensureTodayVisible() {
+  if (!today.value) return
+
+  const start = viewStartYmd.value ?? minStartYmd.value
+  if (!start) return
+
+  const days = calendarDays.value
+  const last = days.length ? days[days.length - 1]!.ymd : null
+  if (!last) return
+
+  if (today.value >= start && today.value <= last) {
+    return
+  }
+
+  const back = Math.floor(windowWorkdays.value / 2)
+  let nextStart = addWorkdays(nextWorkdayYmd(today.value), -back)
+
+  const min = minStartYmd.value
+  if (min && nextStart < min) nextStart = nextWorkdayYmd(min)
+
+  viewStartYmd.value = nextStart
+}
+
 function canPrev(): boolean {
   const start = viewStartYmd.value ?? minStartYmd.value
   const min = minStartYmd.value
@@ -220,11 +243,6 @@ function gotoEnd() {
 
   const min = minStartYmd.value
   if (min && viewStartYmd.value < min) viewStartYmd.value = nextWorkdayYmd(min)
-}
-
-function assigneeText(t: SheetTask): string {
-  if (!t.assignees.length) return '—'
-  return t.assignees.map((a) => `${a.name} (${a.capacity_hours_per_day}ч/д)`).join(', ')
 }
 
 function assigneeChips(t: SheetTask): { key: string; label: string }[] {
@@ -349,12 +367,16 @@ async function fetchAll() {
     if (!viewStartYmd.value && minStartYmd.value) {
       viewStartYmd.value = minStartYmd.value
     }
+
+    ensureTodayVisible()
   } catch (e: any) {
     error.value = e?.response?.data?.message ?? e?.message ?? 'Не удалось загрузить лист Ганта'
   } finally {
     loading.value = false
   }
 }
+
+watch(windowWorkdays, ensureTodayVisible)
 
 watch(
   () => route.params.projectId,
@@ -427,7 +449,7 @@ onMounted(fetchAll)
               <th class="sheet-sticky-col" style="left: 360px; min-width: 260px;">Исполнитель</th>
               <th class="sheet-sticky-col" style="left: 620px; min-width: 120px;">Начало</th>
               <th class="sheet-sticky-col" style="left: 740px; min-width: 140px;">Осталось</th>
-              <th v-for="d in calendarDays" :key="d.ymd" class="gantt-day-head">
+              <th v-for="d in calendarDays" :key="d.ymd" class="gantt-day-head" :class="{ 'gantt-day-head--today': today && d.ymd === today }">
                 {{ d.label }}
               </th>
             </tr>
@@ -444,7 +466,13 @@ onMounted(fetchAll)
                   </span>
                 </button>
               </td>
-              <td v-for="d in calendarDays" :key="`${shipmentKey(s)}-${d.ymd}`" class="gantt-day-td" style="background: var(--sheet-header);"></td>
+              <td
+                v-for="d in calendarDays"
+                :key="`${shipmentKey(s)}-${d.ymd}`"
+                class="gantt-day-td"
+                :class="{ 'gantt-day-td--today': today && d.ymd === today }"
+                style="background: var(--sheet-header);"
+              ></td>
             </tr>
 
             <tr v-for="t in tasksByShipment.get(s)" v-show="isShipmentOpen(s)" :key="t.id">
@@ -466,7 +494,7 @@ onMounted(fetchAll)
               <td class="sheet-sticky-col" style="left: 740px;">
                 {{ remainingText(t) }}
               </td>
-              <td v-for="d in calendarDays" :key="d.ymd" class="gantt-day-td">
+              <td v-for="d in calendarDays" :key="d.ymd" class="gantt-day-td" :class="{ 'gantt-day-td--today': today && d.ymd === today }">
                 <div :class="cellClass(t, d.ymd)" :style="cellStyle(t, d.ymd)"></div>
               </td>
             </tr>

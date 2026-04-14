@@ -16,10 +16,17 @@ class NoteController extends Controller
         $perPage = (int) $request->query('per_page', 15);
         $perPage = max(1, min(100, $perPage));
 
-        $query = Note::query()->orderByDesc('is_pinned')->orderByDesc('id');
+        $query = Note::query()
+            ->with(['project', 'task.shipment'])
+            ->orderByDesc('is_pinned')
+            ->orderByDesc('id');
 
         if ($request->filled('project_id')) {
             $query->where('project_id', $request->integer('project_id'));
+        }
+
+        if ($request->filled('task_id')) {
+            $query->where('task_id', $request->integer('task_id'));
         }
 
         return $query->paginate($perPage);
@@ -32,12 +39,17 @@ class NoteController extends Controller
     {
         $data = $request->validate([
             'project_id' => ['nullable', 'integer', 'exists:projects,id'],
+            'task_id' => ['nullable', 'integer', 'exists:tasks,id'],
             'title' => ['required', 'string', 'max:255'],
             'body' => ['nullable', 'string'],
             'is_pinned' => ['nullable', 'boolean'],
         ]);
 
-        $note = Note::create($data);
+        if (!empty($data['task_id']) && empty($data['project_id'])) {
+            $data['project_id'] = (int) \App\Models\Task::query()->whereKey($data['task_id'])->value('project_id');
+        }
+
+        $note = Note::create($data)->load(['project', 'task.shipment']);
 
         return response()->json($note, 201);
     }
@@ -47,7 +59,7 @@ class NoteController extends Controller
      */
     public function show(Note $note)
     {
-        return $note;
+        return $note->load(['project', 'task.shipment']);
     }
 
     /**
@@ -57,14 +69,19 @@ class NoteController extends Controller
     {
         $data = $request->validate([
             'project_id' => ['sometimes', 'nullable', 'integer', 'exists:projects,id'],
+            'task_id' => ['sometimes', 'nullable', 'integer', 'exists:tasks,id'],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'body' => ['sometimes', 'nullable', 'string'],
             'is_pinned' => ['sometimes', 'nullable', 'boolean'],
         ]);
 
+        if (array_key_exists('task_id', $data) && !empty($data['task_id']) && !array_key_exists('project_id', $data)) {
+            $data['project_id'] = (int) \App\Models\Task::query()->whereKey($data['task_id'])->value('project_id');
+        }
+
         $note->fill($data)->save();
 
-        return $note;
+        return $note->load(['project', 'task.shipment']);
     }
 
     /**

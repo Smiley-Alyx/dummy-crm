@@ -60,6 +60,17 @@ type TaskWorkLog = {
   updated_at: string
 }
 
+type Note = {
+  id: number
+  project_id: number | null
+  task_id: number | null
+  title: string
+  body: string | null
+  is_pinned: boolean
+  created_at: string
+  updated_at: string
+}
+
 const route = useRoute()
 const projectId = computed(() => Number(route.params.projectId))
 const shipmentId = computed(() => Number(route.params.shipmentId))
@@ -82,11 +93,13 @@ const detailsOpen = ref<Record<number, boolean>>({})
 const detailsLoading = ref<Record<number, boolean>>({})
 const assignmentsByTask = ref<Record<number, TaskAssignment[]>>({})
 const logsByTask = ref<Record<number, TaskWorkLog[]>>({})
+const notesByTask = ref<Record<number, Note[]>>({})
 
 const assignUserId = ref<Record<number, number | null>>({})
 const assignCapacity = ref<Record<number, number>>({})
 const logUserId = ref<Record<number, number | null>>({})
 const logMinutes = ref<Record<number, number>>({})
+const noteText = ref<Record<number, string>>({})
 
 const todayYmd = new Date().toISOString().slice(0, 10)
 
@@ -143,6 +156,14 @@ async function loadTaskDetails(taskId: number) {
     assignmentsByTask.value[taskId] = assignmentsRes.data.data
     logsByTask.value[taskId] = logsRes.data.data
 
+    const notesRes = await api.get<Paginated<Note>>('/api/notes', {
+      params: {
+        task_id: taskId,
+        per_page: 200,
+      },
+    })
+    notesByTask.value[taskId] = notesRes.data.data
+
     if (assignUserId.value[taskId] == null && users.value.length) {
       assignUserId.value[taskId] = users.value[0]!.id
     }
@@ -155,10 +176,33 @@ async function loadTaskDetails(taskId: number) {
     if (logMinutes.value[taskId] == null) {
       logMinutes.value[taskId] = 60
     }
+    if (noteText.value[taskId] == null) {
+      noteText.value[taskId] = ''
+    }
   } catch (e: any) {
     error.value = e?.response?.data?.message ?? e?.message ?? 'Не удалось загрузить данные задачи'
   } finally {
     detailsLoading.value[taskId] = false
+  }
+}
+
+async function createNote(taskId: number) {
+  const text = (noteText.value[taskId] ?? '').trim()
+  if (!text) return
+
+  error.value = null
+
+  try {
+    await api.post('/api/notes', {
+      task_id: taskId,
+      title: text,
+      body: null,
+      is_pinned: false,
+    })
+    noteText.value[taskId] = ''
+    await loadTaskDetails(taskId)
+  } catch (e: any) {
+    error.value = e?.response?.data?.message ?? e?.message ?? 'Не удалось создать заметку'
   }
 }
 
@@ -212,7 +256,8 @@ function toggleTaskDetails(taskId: number) {
   if (
     detailsOpen.value[taskId] &&
     !assignmentsByTask.value[taskId] &&
-    !logsByTask.value[taskId]
+    !logsByTask.value[taskId] &&
+    !notesByTask.value[taskId]
   ) {
     loadTaskDetails(taskId)
   }
@@ -441,6 +486,29 @@ onMounted(fetchAll)
                             </button>
                           </form>
                         </div>
+                      </div>
+
+                      <div class="sheet-card">
+                        <div style="font-weight: 700; margin-bottom: 8px;">Заметки</div>
+
+                        <div v-if="notesByTask[t.id]?.length" style="display: grid; gap: 6px; margin-bottom: 10px;">
+                          <div v-for="n in notesByTask[t.id]" :key="n.id" style="display: grid; gap: 2px;">
+                            <div>{{ n.title }}</div>
+                            <div class="sheet-muted" style="font-size: 12px;">#{{ n.id }}</div>
+                          </div>
+                        </div>
+                        <div v-else style="color: #6b7280; margin-bottom: 10px;">Пока нет заметок</div>
+
+                        <form @submit.prevent="createNote(t.id)" style="display: flex; gap: 8px; align-items: end; flex-wrap: wrap;">
+                          <label style="display: grid; gap: 6px; flex: 1; min-width: 260px;">
+                            <div class="sheet-muted" style="font-size: 12px;">Новая заметка</div>
+                            <input v-model="noteText[t.id]" class="sheet-input" placeholder="Например: Клиент добавил фичу" />
+                          </label>
+
+                          <button type="submit" class="sheet-btn sheet-btn-primary">
+                            Добавить
+                          </button>
+                        </form>
                       </div>
                     </div>
                   </td>

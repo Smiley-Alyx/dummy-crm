@@ -49,6 +49,10 @@ type ReportProjectBlock = {
   shipments: ReportShipmentBlock[]
 }
 
+type FlatReportRow =
+  | { kind: 'shipment'; key: string; shipment_title: string; minutes: number }
+  | { kind: 'task'; key: string; task_title: string; task_id: number; minutes: number }
+
 type ReportResponse = {
   user_id: number
   project_id: number | null
@@ -89,6 +93,28 @@ const totalHours = computed(() => {
   const total = summary.value?.total_minutes ?? 0
   return (total / 60).toFixed(2)
 })
+
+function reportRows(p: ReportProjectBlock): FlatReportRow[] {
+  const out: FlatReportRow[] = []
+  for (const s of p.shipments) {
+    out.push({
+      kind: 'shipment',
+      key: `s-${p.project_id}-${String(s.shipment_id)}`,
+      shipment_title: s.shipment_title,
+      minutes: s.minutes,
+    })
+    for (const t of s.tasks) {
+      out.push({
+        kind: 'task',
+        key: `t-${p.project_id}-${String(s.shipment_id)}-${t.task_id}`,
+        task_title: t.task_title,
+        task_id: t.task_id,
+        minutes: t.minutes,
+      })
+    }
+  }
+  return out
+}
 
 async function fetchAll() {
   loading.value = true
@@ -289,27 +315,20 @@ onMounted(async () => {
               <td colspan="2" class="sheet-muted">Нет данных</td>
             </tr>
           </tbody>
-          <template v-else>
-            <template v-for="p in report.projects">
-              <tbody :key="`p-${p.project_id}`">
-                <tr>
-                  <td style="font-weight: 700; background: var(--sheet-header);">{{ p.project_name }} (#{{ p.project_id }})</td>
-                  <td class="right" style="font-weight: 700; background: var(--sheet-header);">{{ formatMinutes(p.minutes) }}</td>
-                </tr>
-              </tbody>
+          <tbody v-else v-for="p in report.projects" :key="p.project_id">
+            <tr>
+              <td style="font-weight: 700; background: var(--sheet-header);">{{ p.project_name }} (#{{ p.project_id }})</td>
+              <td class="right" style="font-weight: 700; background: var(--sheet-header);">{{ formatMinutes(p.minutes) }}</td>
+            </tr>
 
-              <tbody v-for="s in p.shipments" :key="String(s.shipment_id)">
-                <tr>
-                  <td style="padding-left: 18px; font-weight: 700;">{{ s.shipment_title }}</td>
-                  <td class="right" style="font-weight: 700;">{{ formatMinutes(s.minutes) }}</td>
-                </tr>
-                <tr v-for="t in s.tasks" :key="t.task_id">
-                  <td style="padding-left: 34px;">{{ t.task_title }} (#{{ t.task_id }})</td>
-                  <td class="right">{{ formatMinutes(t.minutes) }}</td>
-                </tr>
-              </tbody>
-            </template>
-          </template>
+            <tr v-for="r in reportRows(p)" :key="r.key">
+              <td v-if="r.kind === 'shipment'" style="padding-left: 18px; font-weight: 700;">{{ r.shipment_title }}</td>
+              <td v-else style="padding-left: 34px;">{{ r.task_title }} (#{{ r.task_id }})</td>
+
+              <td v-if="r.kind === 'shipment'" class="right" style="font-weight: 700;">{{ formatMinutes(r.minutes) }}</td>
+              <td v-else class="right">{{ formatMinutes(r.minutes) }}</td>
+            </tr>
+          </tbody>
         </table>
       </div>
     </div>
